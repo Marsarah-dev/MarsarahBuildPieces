@@ -148,6 +148,10 @@ namespace MarsarahBuildPieces.Managers
 					GlacialStonePortal.TogglePortalVisibility();
 					break;
 
+				case var name when name == Configs.MysticalLightWard.Name:
+					MysticalLightWard.ToggleVisibility();
+					break;
+
 				case var name when name == Configs.BuildPiecesLighting.Name:
 					SilverSconce.ToggleVisibility();
 					GreenStandingBrazier.ToggleVisibility();

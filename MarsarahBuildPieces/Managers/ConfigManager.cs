@@ -56,7 +56,7 @@ namespace MarsarahBuildPieces.Managers
 
 			public static readonly ConfigMetadata BuildPiecesLighting = new ConfigMetadata(
 				"04 - Extra Lights",
-				"Adds new light sources including the Silver Sconce, Silver Table Torch, Green Standing Brazier, Silver Hanging Brazier, and Colored Dverger Lanterns, unlocked at the Mountain and Mistlands biomes. (Toggling mid-game requires reloading the build/crafting menu)");
+				"Adds new light sources including the Silver Sconce, Green Standing Brazier, Silver Hanging Brazier, and Colored Dverger Lanterns, unlocked at the Mountain and Mistlands biomes. (Toggling mid-game requires reloading the build/crafting menu)");
 		}
 
 		public static ConfigEntry<bool> ServerConfigLocked;

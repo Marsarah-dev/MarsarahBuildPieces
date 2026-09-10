@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using MarsarahBuildPieces.Managers;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace MarsarahBuildPieces.Patches.BuildPieces
@@ -10,6 +11,8 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 		private static bool initialized;
 		private static GameObject MysticalWardPrefab;
+		private const float EffectRadius = 32f;
+		private static readonly HashSet<MysticalLightWardArea> activeWards = new HashSet<MysticalLightWardArea>();
 
 		[HarmonyPatch(typeof(ZNetScene), "Awake")]
 		public static class ZNetScene_Awake_Patch
@@ -22,6 +25,51 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				initialized = true;
 
 				CreateMysticalWard();
+			}
+		}
+
+		[HarmonyPatch(typeof(Fireplace), "UpdateFireplace")]
+		private static class Fireplace_UpdateFireplace_Patch
+		{
+			// TODO: Remove this prefix when done testing light fuel
+			private static bool burnSpeedLogged;
+
+			private static void Prefix(Fireplace __instance)
+			{
+				__instance.m_secPerFuel = 5f;
+
+				if (!burnSpeedLogged)
+				{
+					log.Info("Temporary testing: fireplace fuel burn time set to 5 seconds per fuel.");
+					burnSpeedLogged = true;
+				}
+			}
+
+			private static void Postfix(Fireplace __instance, ref ZNetView ___m_nview)
+			{
+				if (___m_nview == null || !___m_nview.IsOwner())
+					return;
+
+				if (!IsInsideActiveWard(__instance.transform.position))
+					return;
+
+				ZDO zdo = ___m_nview.GetZDO();
+				if (zdo == null)
+					return;
+
+				zdo.Set("fuel", __instance.m_maxFuel);
+			}
+		}
+
+		[HarmonyPatch(typeof(Player), "SetupPlacementGhost")]
+		private static class Player_SetupPlacementGhost_Patch
+		{
+			static void Postfix(GameObject ___m_placementGhost)
+			{
+				if (___m_placementGhost == null || !___m_placementGhost.name.StartsWith("mystical_ward"))
+					return;
+
+				SetupPlacementRadius(___m_placementGhost);
 			}
 		}
 
@@ -38,8 +86,11 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			}
 
 			RemoveWardBehavior(MysticalWardPrefab);
+			MysticalWardPrefab.AddComponent<MysticalLightWardArea>();
 			SetupMysticalWardDefaults(MysticalWardPrefab);
 			ScaleMysticalWard(MysticalWardPrefab);
+			ApplyMysticalGlow(MysticalWardPrefab);
+			HideRadiusMarker(MysticalWardPrefab);
 
 			MPrefabManager.RegisterToZNetScene(MysticalWardPrefab);
 
@@ -108,6 +159,144 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			bool enabled = ConfigManager.MysticalLightWardEnabled.Value;
 
 			return BuildPieceController.TogglePiece(MysticalWardPrefab?.GetComponent<Piece>(), enabled, log);
+		}
+
+		internal static void RegisterWard(MysticalLightWardArea ward)
+		{
+			if (ward == null)
+				return;
+
+			activeWards.Add(ward);
+			log.Info($"Registered Mystical Light Ward area at {ward.transform.position}.");
+		}
+
+		internal static void UnregisterWard(MysticalLightWardArea ward)
+		{
+			if (ward == null)
+				return;
+
+			activeWards.Remove(ward);
+		}
+
+		public static bool IsInsideActiveWard(Vector3 position)
+		{
+			if (!ConfigManager.MysticalLightWardEnabled.Value)
+				return false;
+
+			float radiusSquared = EffectRadius * EffectRadius;
+
+			foreach (MysticalLightWardArea ward in activeWards)
+			{
+				if (ward == null)
+					continue;
+
+				if ((ward.transform.position - position).sqrMagnitude <= radiusSquared)
+					return true;
+			}
+
+			return false;
+		}
+
+		private static void ApplyMysticalGlow(GameObject prefab)
+		{
+			Color blue = new Color(0.25f, 0.55f, 1f, 1f);
+
+			foreach (Renderer renderer in prefab.GetComponentsInChildren<Renderer>(true))
+			{
+				Material[] materials = renderer.sharedMaterials;
+				bool changed = false;
+
+				for (int i = 0; i < materials.Length; i++)
+				{
+					Material material = materials[i];
+					if (material == null || !material.name.StartsWith("Guardstone_OdenGlow_mat"))
+						continue;
+
+					Material blueMaterial = new Material(material)
+					{
+						name = "MysticalWard_BlueGlow"
+					};
+
+					if (blueMaterial.HasProperty("_Color"))
+						blueMaterial.SetColor("_Color", blue);
+
+					if (blueMaterial.HasProperty("_EmissionColor"))
+						blueMaterial.SetColor("_EmissionColor", blue * 2f);
+
+					materials[i] = blueMaterial;
+					changed = true;
+
+					log.Info($"Changed glow material on renderer '{renderer.name}' to mystical blue.");
+				}
+
+				if (changed)
+					renderer.sharedMaterials = materials;
+			}
+		}
+
+		internal static void HideRadiusMarker(GameObject prefab)
+		{
+			foreach (CircleProjector projector in prefab.GetComponentsInChildren<CircleProjector>(true))
+			{
+				if (projector.gameObject.name != "AreaMarker")
+					continue;
+
+				projector.gameObject.SetActive(false);
+				return;
+			}
+
+			log.Warn("Could not find AreaMarker on Mystical Light Ward.");
+		}
+
+		private static void SetupPlacementRadius(GameObject placementGhost)
+		{
+			foreach (CircleProjector projector in placementGhost.GetComponentsInChildren<CircleProjector>(true))
+			{
+				if (projector.gameObject.name != "AreaMarker")
+					continue;
+
+				projector.gameObject.SetActive(true);
+				projector.enabled = true;
+				return;
+			}
+
+			log.Warn("Could not find AreaMarker on Mystical Light Ward placement ghost.");
+		}
+	}
+
+	internal class MysticalLightWardArea : MonoBehaviour, Hoverable
+	{
+		private ZNetView nview;
+
+		private void Start()
+		{
+			nview = GetComponent<ZNetView>();
+
+			if (nview == null || nview.GetZDO() == null)
+				return;
+
+			MysticalLightWard.HideRadiusMarker(gameObject);
+			MysticalLightWard.RegisterWard(this);
+		}
+
+		private void OnDestroy()
+		{
+			MysticalLightWard.UnregisterWard(this);
+		}
+
+		public string GetHoverName()
+		{
+			return "Mystical Light Ward";
+		}
+
+		public string GetHoverText()
+		{
+			return "Mystical Light Ward\nKeeps fueled light sources permanently lit within 32m.";
+		}
+
+		public float GetHoverOffset()
+		{
+			return 0f;
 		}
 	}
 }

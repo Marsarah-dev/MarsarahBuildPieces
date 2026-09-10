@@ -37,7 +37,12 @@ namespace MarsarahBuildPieces.Managers
 				tweaksBuildPieceAmounts.SettingChanged += (_, __) => RefreshLightRequirements();
 
 			if (tweaksPermanentLights != null)
-				tweaksPermanentLights.SettingChanged += (_, __) => RefreshLightRequirements();
+			{
+				HandleInitialPermanentLightsConflict();
+
+				tweaksPermanentLights.SettingChanged += (_, __) => OnPermanentLightsChanged();
+				ConfigManager.MysticalLightWardEnabled.SettingChanged += (_, __) => OnMysticalLightWardChanged();
+			}
 
 			if (tweaksBrighterLanterns != null)
 				tweaksBrighterLanterns.SettingChanged += (_, __) => RefreshLanternIntensity();
@@ -77,6 +82,38 @@ namespace MarsarahBuildPieces.Managers
 			ColoredDvergerLanterns.UpdateColoredDvergrLanternsIntensity();
 
 			log.Info("Refreshed colored Dvergr lantern intensity from MarsarahTweaks settings.");
+		}
+
+		private static void HandleInitialPermanentLightsConflict()
+		{
+			if (!ConfigManager.MysticalLightWardEnabled.Value || tweaksPermanentLights?.Value != true)
+				return;
+
+			log.Warn("MarsarahTweaks Permanent Lights and Mystical Light Ward are both enabled. Disabling Permanent Lights.");
+
+			tweaksPermanentLights.Value = false;
+		}
+
+		private static void OnPermanentLightsChanged()
+		{
+			if (tweaksPermanentLights.Value && ConfigManager.MysticalLightWardEnabled.Value)
+			{
+				log.Warn("MarsarahTweaks Permanent Lights enabled. Disabling Mystical Light Ward.");
+
+				ConfigManager.MysticalLightWardEnabled.Value = false;
+			}
+
+			RefreshLightRequirements();
+		}
+
+		private static void OnMysticalLightWardChanged()
+		{
+			if (!ConfigManager.MysticalLightWardEnabled.Value || tweaksPermanentLights?.Value != true)
+				return;
+
+			log.Warn("Mystical Light Ward enabled. Disabling MarsarahTweaks Permanent Lights.");
+
+			tweaksPermanentLights.Value = false;
 		}
 	}
 }

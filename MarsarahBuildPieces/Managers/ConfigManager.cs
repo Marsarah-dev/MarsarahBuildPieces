@@ -57,11 +57,11 @@ namespace MarsarahBuildPieces.Managers
 
 			public static readonly ConfigMetadata MysticalLightWard = new ConfigMetadata(
 				"04 - Mystical Light Ward",
-				"Adds a new ward starting with the Mountain biome. When built, all light sources in its area will be automatically refueled when reaching 0 fuel. (Toggling mid-game requires reloading the build/crafting menu)");
+				"Adds a small ward starting with the Mountain biome. When built, it keeps fueled light sources within its radius permanently lit.. (Toggling mid-game requires reloading the build/crafting menu)");
 			
 			public static readonly ConfigMetadata MysticalLightWardRadius = new ConfigMetadata(
 				"05 - Mystical Light Ward Radius",
-				"Sets the effect radius of the Mystical Light Ward in meters (Aceptable Range: 5-50).");
+				"Sets the effect radius of the Mystical Light Ward in meters.");
 		}
 
 		public static ConfigEntry<bool> ServerConfigLocked;

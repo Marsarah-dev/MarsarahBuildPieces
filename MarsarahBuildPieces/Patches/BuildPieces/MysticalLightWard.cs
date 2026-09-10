@@ -12,6 +12,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 		private static bool initialized;
 		private static GameObject MysticalWardPrefab;
 		private static readonly HashSet<MysticalLightWardArea> activeWards = new HashSet<MysticalLightWardArea>();
+		private static readonly Color MysticalGlowColor = new Color(0.25f, 0.55f, 1f, 1f);
 
 		internal static float EffectRadius => ConfigManager.MysticalLightWardRadius.Value;
 
@@ -32,20 +33,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 		[HarmonyPatch(typeof(Fireplace), "UpdateFireplace")]
 		private static class Fireplace_UpdateFireplace_Patch
 		{
-			// TODO: Remove this prefix when done testing light fuel
-			private static bool burnSpeedLogged;
-
-			private static void Prefix(Fireplace __instance)
-			{
-				__instance.m_secPerFuel = 5f;
-
-				if (!burnSpeedLogged)
-				{
-					log.Info("Temporary testing: fireplace fuel burn time set to 5 seconds per fuel.");
-					burnSpeedLogged = true;
-				}
-			}
-
 			private static void Postfix(Fireplace __instance, ref ZNetView ___m_nview)
 			{
 				if (___m_nview == null || !___m_nview.IsOwner())
@@ -161,6 +148,14 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 		{
 			bool enabled = ConfigManager.MysticalLightWardEnabled.Value;
 
+			SetVisualState(MysticalWardPrefab, enabled);
+
+			foreach (MysticalLightWardArea ward in activeWards)
+			{
+				if (ward != null)
+					SetVisualState(ward.gameObject, enabled);
+			}
+
 			return BuildPieceController.TogglePiece(MysticalWardPrefab?.GetComponent<Piece>(), enabled, log);
 		}
 
@@ -170,6 +165,9 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				return;
 
 			activeWards.Add(ward);
+
+			SetVisualState(ward.gameObject, ConfigManager.MysticalLightWardEnabled.Value);
+
 			log.Info($"Registered Mystical Light Ward area at {ward.transform.position}.");
 		}
 
@@ -202,8 +200,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 		private static void ApplyMysticalGlow(GameObject prefab)
 		{
-			Color blue = new Color(0.25f, 0.55f, 1f, 1f);
-
 			foreach (Renderer renderer in prefab.GetComponentsInChildren<Renderer>(true))
 			{
 				Material[] materials = renderer.sharedMaterials;
@@ -221,10 +217,10 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 					};
 
 					if (blueMaterial.HasProperty("_Color"))
-						blueMaterial.SetColor("_Color", blue);
+						blueMaterial.SetColor("_Color", MysticalGlowColor);
 
 					if (blueMaterial.HasProperty("_EmissionColor"))
-						blueMaterial.SetColor("_EmissionColor", blue * 2f);
+						blueMaterial.SetColor("_EmissionColor", MysticalGlowColor * 2f);
 
 					materials[i] = blueMaterial;
 					changed = true;
@@ -234,6 +230,52 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 				if (changed)
 					renderer.sharedMaterials = materials;
+			}
+		}
+
+		private static void SetVisualState(GameObject ward, bool enabled)
+		{
+			if (ward == null)
+				return;
+
+			foreach (Renderer renderer in ward.GetComponentsInChildren<Renderer>(true))
+			{
+				foreach (Material material in renderer.sharedMaterials)
+				{
+					if (material == null || !material.name.StartsWith("MysticalWard_BlueGlow"))
+						continue;
+
+					if (material.HasProperty("_EmissionColor"))
+						material.SetColor("_EmissionColor", enabled ? MysticalGlowColor * 2f : Color.black);
+				}
+
+				if (renderer.name == "glow" ||
+					renderer.name == "sparcs" ||
+					renderer.name.StartsWith("pulse") ||
+					renderer.name == "flare")
+				{
+					renderer.enabled = enabled;
+				}
+			}
+
+			foreach (ParticleSystem particles in ward.GetComponentsInChildren<ParticleSystem>(true))
+			{
+				ParticleSystem.EmissionModule emission = particles.emission;
+				emission.enabled = enabled;
+
+				if (enabled)
+				{
+					particles.Play(true);
+				}
+				else
+				{
+					particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+				}
+			}
+
+			foreach (Light light in ward.GetComponentsInChildren<Light>(true))
+			{
+				light.enabled = enabled;
 			}
 		}
 
@@ -320,6 +362,9 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 		public string GetHoverText()
 		{
+			if (!ConfigManager.MysticalLightWardEnabled.Value)
+				return "Mystical Light Ward\nThe mystical energy of this ward is dormant.";
+
 			return $"Mystical Light Ward\nKeeps fueled light sources permanently lit within {MysticalLightWard.EffectRadius:0}m.";
 		}
 

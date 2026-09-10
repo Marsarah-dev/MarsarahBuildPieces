@@ -310,25 +310,34 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				log.Info($"Copied full '{variant}' (with children) from {sourcePrefabName} to {targetPrefab.name}");
 			}
 
-			// Rebind Fireplace to main _enabled
+			// Rebind Fireplace enabled objects
 			Fireplace fp = targetPrefab.GetComponent<Fireplace>();
-			if (fp != null)
-			{
-				var newEnabled = targetPrefab.transform.Find("_enabled");
-				if (newEnabled != null)
-				{
-					fp.m_enabledObject = newEnabled.gameObject;
-					log.Info($"Rebound Fireplace.m_enabledObject for {targetPrefab.name}");
-				}
-				else
-				{
-					log.Warn($"'_enabled' missing on {targetPrefab.name} after copy; Fireplace.m_enabledObject not set.");
-				}
-			}
-			else
+			if (fp == null)
 			{
 				log.Warn($"No Fireplace component found on {targetPrefab.name}");
+				return;
 			}
+
+			Transform newEnabled = targetPrefab.transform.Find("_enabled");
+			Transform newEnabledHigh = targetPrefab.transform.Find("_enabled_high");
+			Transform newEnabledLow = targetPrefab.transform.Find("_enabled_low");
+
+			if (newEnabled != null)
+				fp.m_enabledObject = newEnabled.gameObject;
+			else
+				log.Warn($"'_enabled' missing on {targetPrefab.name} after copy.");
+
+			if (newEnabledHigh != null)
+				fp.m_enabledObjectHigh = newEnabledHigh.gameObject;
+			else
+				log.Warn($"'_enabled_high' missing on {targetPrefab.name} after copy.");
+
+			if (newEnabledLow != null)
+				fp.m_enabledObjectLow = newEnabledLow.gameObject;
+			else
+				log.Warn($"'_enabled_low' missing on {targetPrefab.name} after copy.");
+
+			log.Info($"Rebound Fireplace enabled objects for {targetPrefab.name}.");
 		}
 
 		private static void ModifyLightSettings(GameObject prefab)

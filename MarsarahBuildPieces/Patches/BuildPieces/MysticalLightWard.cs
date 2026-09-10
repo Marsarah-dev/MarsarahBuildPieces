@@ -33,6 +33,20 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 		[HarmonyPatch(typeof(Fireplace), "UpdateFireplace")]
 		private static class Fireplace_UpdateFireplace_Patch
 		{
+			// TODO: Remove this prefix when done testing light fuel
+			private static bool burnSpeedLogged;
+
+			private static void Prefix(Fireplace __instance)
+			{
+				__instance.m_secPerFuel = 3f;
+
+				if (!burnSpeedLogged)
+				{
+					log.Info("Temporary testing: fireplace fuel burn time set to 5 seconds per fuel.");
+					burnSpeedLogged = true;
+				}
+			}
+
 			private static void Postfix(Fireplace __instance, ref ZNetView ___m_nview)
 			{
 				if (___m_nview == null || !___m_nview.IsOwner())

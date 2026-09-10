@@ -39,18 +39,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			}
 		}
 
-		[HarmonyPatch(typeof(Player), nameof(Player.GetAvailableRecipes))]
-		public static class Player_GetAvailableRecipes_Patch
-		{
-			static void Postfix(ref List<Recipe> available)
-			{
-				if (ConfigManager.PocketPortalEnabled.Value || PortalCoreRecipe == null)
-					return;
-
-				available.RemoveAll(recipe => recipe == PortalCoreRecipe);
-			}
-		}
-
 		private static void Init() 
 		{
 			CreatePocketPortal();
@@ -81,11 +69,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			BuildPieceController.ConfigurePiece(PocketPortalPrefab, "Misc", new[]
 			{
 				BuildPieceController.MakeRequirement("PortalCore", 1)
-			});
-
-			//TogglePocketPortalVisibility();
-
-			//ConfigurePocketPortalPieceData();			
+			});	
 
 			PocketPortalPrefab.SetActive(true);
 			log.Info("Pocket Portal registered and ready.");
@@ -120,22 +104,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				piece.m_craftingStation = null;
 			}
 		}
-
-		/*private static void ConfigurePocketPortalPieceData()
-		{
-			var pieceConfig = new PieceConfig
-			{
-				PieceTable = "Hammer",
-				Category = "Misc",
-				Requirements = new[]
-				{
-					new RequirementConfig("PortalCore", 1, recover: true)
-				}
-			};
-
-			MPrefabManager.AddToBuildMenu(PocketPortalPrefab, pieceConfig);
-			TogglePocketPortalVisibility();
-		}*/
 
 		private static GameObject RegisterPocketPortalEffects()
 		{
@@ -412,7 +380,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			};
 
 			PortalCoreRecipe = MPrefabManager.RegisterRecipe(recipeConfig);
-			//TogglePortalCoreVisibility();
+			TogglePortalCoreVisibility();
 		}
 
 		public static bool TogglePocketPortalVisibility()
@@ -430,14 +398,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				return;
 			}
 
-			if (ConfigManager.PocketPortalEnabled.Value)
-			{
-				PortalCoreRecipe.m_enabled = true;
-			}
-			else
-			{
-				PortalCoreRecipe.m_enabled = false;
-			}
+			PortalCoreRecipe.m_enabled = ConfigManager.PocketPortalEnabled.Value;
 		}
 
 		// Adds the pocket_portal prefab early to be picked up by ZDOMan

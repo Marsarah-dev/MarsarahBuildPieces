@@ -2,6 +2,7 @@
 using BepInEx.Configuration;
 using ServerSync;
 using System.IO;
+using MarsarahBuildPieces.Patches.BuildPieces;
 
 namespace MarsarahBuildPieces.Managers
 {
@@ -130,7 +131,26 @@ namespace MarsarahBuildPieces.Managers
 
 			Config.Save();
 
-			// Piece-specific refresh logic will be added as each feature is ported.
+			if (ObjectDB.instance == null || ZNetScene.instance == null || ZNet.instance == null)
+				return;
+
+			if (ZNet.instance.IsDedicated())
+				return;
+
+			switch (configName)
+			{
+				case var name when name == Configs.PocketPortal.Name:
+					PocketPortal.TogglePocketPortalVisibility();
+					PocketPortal.TogglePortalCoreVisibility();
+					break;
+
+				case var name when name == Configs.BuildPiecesLighting.Name:
+					SilverSconce.ToggleVisibility();
+					GreenStandingBrazier.ToggleVisibility();
+					SilverHangingBrazier.ToggleVisibility();
+					ColoredDvergerLanterns.ToggleVisibility();
+					break;
+			}
 		}
 	}
 }

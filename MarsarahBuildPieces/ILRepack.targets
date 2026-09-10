@@ -1,0 +1,16 @@
+﻿<Project>
+    <Target Name="ILRepacker" AfterTargets="Build">
+        <ItemGroup>
+            <InputAssemblies Include="$(TargetPath)" />
+            <InputAssemblies Include="$(TargetDir)ServerSync.dll" />
+        </ItemGroup>
+
+        <ILRepack Parallel="true"
+                  DebugInfo="true"
+                  Internalize="true"
+                  InputAssemblies="@(InputAssemblies)"
+                  OutputFile="$(TargetPath)"
+                  TargetKind="SameAsPrimaryAssembly"
+                  LibraryPath="$(TargetDir)" />
+    </Target>
+</Project>

@@ -20,9 +20,16 @@ namespace MarsarahBuildPieces
 		{
 			LogManager.SetGlobalLogLevel(LogManager.LogLevel.Info);
 
+			ConfigManager.Init(Config);
+
 			log.Info($"{ModName} {ModVersion} loaded.");
 
 			harmony.PatchAll();
+		}
+
+		private void OnDestroy()
+		{
+			Config.Save();
 		}
 	}
 }

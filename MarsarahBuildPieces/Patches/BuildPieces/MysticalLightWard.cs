@@ -11,8 +11,9 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 		private static bool initialized;
 		private static GameObject MysticalWardPrefab;
-		private const float EffectRadius = 32f;
 		private static readonly HashSet<MysticalLightWardArea> activeWards = new HashSet<MysticalLightWardArea>();
+
+		internal static float EffectRadius => ConfigManager.MysticalLightWardRadius.Value;
 
 		[HarmonyPatch(typeof(ZNetScene), "Awake")]
 		public static class ZNetScene_Awake_Patch
@@ -90,6 +91,8 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			SetupMysticalWardDefaults(MysticalWardPrefab);
 			ScaleMysticalWard(MysticalWardPrefab);
 			ApplyMysticalGlow(MysticalWardPrefab);
+
+			SetRadiusMarker(MysticalWardPrefab);
 			HideRadiusMarker(MysticalWardPrefab);
 
 			MPrefabManager.RegisterToZNetScene(MysticalWardPrefab);
@@ -234,6 +237,32 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			}
 		}
 
+		private static void SetRadiusMarker(GameObject prefab)
+		{
+			foreach (CircleProjector projector in prefab.GetComponentsInChildren<CircleProjector>(true))
+			{
+				if (projector.gameObject.name != "AreaMarker")
+					continue;
+
+				projector.m_radius = EffectRadius;
+				projector.m_nrOfSegments = Mathf.CeilToInt(Mathf.Max(5f, 4f * EffectRadius));
+
+				return;
+			}
+
+			log.Warn("Could not find AreaMarker on Mystical Light Ward.");
+		}
+
+		public static void RefreshRadius()
+		{
+			if (MysticalWardPrefab == null)
+				return;
+
+			SetRadiusMarker(MysticalWardPrefab);
+
+			log.Info($"Mystical Light Ward radius updated to {EffectRadius:0}m.");
+		}
+
 		internal static void HideRadiusMarker(GameObject prefab)
 		{
 			foreach (CircleProjector projector in prefab.GetComponentsInChildren<CircleProjector>(true))
@@ -291,7 +320,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 		public string GetHoverText()
 		{
-			return "Mystical Light Ward\nKeeps fueled light sources permanently lit within 32m.";
+			return $"Mystical Light Ward\nKeeps fueled light sources permanently lit within {MysticalLightWard.EffectRadius:0}m.";
 		}
 
 		public float GetHoverOffset()

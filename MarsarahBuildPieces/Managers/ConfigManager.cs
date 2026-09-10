@@ -51,21 +51,26 @@ namespace MarsarahBuildPieces.Managers
 				"02 - Glacial Stone Portal",
 				"Enables the unused stone portal and adds it to the build menu. Works like a normal portal and is not to be confused with the Stone Portal from Ashlands. Unlocked at the Mountain biome. (Toggling mid-game requires reloading the build/crafting menu)");
 
-			public static readonly ConfigMetadata MysticalLightWard = new ConfigMetadata(
-				"03 - Mystical Light Ward",
-				"Adds a new ward starting with the Mountain biome. When built, all light sources in its area will be automatically refueled when reaching 0 fuel. (Toggling mid-game requires reloading the build/crafting menu)");
-
 			public static readonly ConfigMetadata BuildPiecesLighting = new ConfigMetadata(
-				"04 - Extra Lights",
+				"03 - Extra Lights",
 				"Adds new light sources including the Silver Sconce, Green Standing Brazier, Silver Hanging Brazier, and Colored Dverger Lanterns, unlocked at the Mountain and Mistlands biomes. (Toggling mid-game requires reloading the build/crafting menu)");
+
+			public static readonly ConfigMetadata MysticalLightWard = new ConfigMetadata(
+				"04 - Mystical Light Ward",
+				"Adds a new ward starting with the Mountain biome. When built, all light sources in its area will be automatically refueled when reaching 0 fuel. (Toggling mid-game requires reloading the build/crafting menu)");
+			
+			public static readonly ConfigMetadata MysticalLightWardRadius = new ConfigMetadata(
+				"05 - Mystical Light Ward Radius",
+				"Sets the effect radius of the Mystical Light Ward in meters (Aceptable Range: 5-50).");
 		}
 
 		public static ConfigEntry<bool> ServerConfigLocked;
 
 		public static ConfigEntry<bool> PocketPortalEnabled;
 		public static ConfigEntry<bool> GlacialStonePortalEnabled;
-		public static ConfigEntry<bool> MysticalLightWardEnabled;
 		public static ConfigEntry<bool> BuildPiecesLightingEnabled;
+		public static ConfigEntry<bool> MysticalLightWardEnabled;
+		public static ConfigEntry<int> MysticalLightWardRadius;
 
 		public static void Init(ConfigFile configFile)
 		{
@@ -76,17 +81,18 @@ namespace MarsarahBuildPieces.Managers
 
 			PocketPortalEnabled = CreateConfig(ConfigSections.BuildPieces, Configs.PocketPortal.Name, true, Configs.PocketPortal.Description);
 			GlacialStonePortalEnabled = CreateConfig(ConfigSections.BuildPieces, Configs.GlacialStonePortal.Name, true, Configs.GlacialStonePortal.Description);
-			MysticalLightWardEnabled = CreateConfig(ConfigSections.BuildPieces, Configs.MysticalLightWard.Name, true, Configs.MysticalLightWard.Description);
 			BuildPiecesLightingEnabled = CreateConfig(ConfigSections.BuildPieces, Configs.BuildPiecesLighting.Name, true, Configs.BuildPiecesLighting.Description);
+			MysticalLightWardEnabled = CreateConfig(ConfigSections.BuildPieces, Configs.MysticalLightWard.Name, true, Configs.MysticalLightWard.Description);
+			MysticalLightWardRadius = CreateConfig(ConfigSections.BuildPieces, Configs.MysticalLightWardRadius.Name, 32, Configs.MysticalLightWardRadius.Description, true,	new AcceptableValueRange<int>(5, 50));
 
 			SetupWatcher();
 
 			log.Info("Build Pieces configuration initialized.");
 		}
 
-		private static ConfigEntry<T> CreateConfig<T>(string group, string name, T defaultValue, string description, bool synchronizedSetting = true)
+		private static ConfigEntry<T> CreateConfig<T>(string group, string name, T defaultValue, string description, bool synchronizedSetting = true, AcceptableValueBase acceptableValues = null)
 		{
-			ConfigEntry<T> configEntry = Config.Bind(group, name, defaultValue, new ConfigDescription(description));
+			ConfigEntry<T> configEntry = Config.Bind(group, name, defaultValue, new ConfigDescription(description, acceptableValues));
 
 			SyncedConfigEntry<T> syncedConfigEntry = configSync.AddConfigEntry(configEntry);
 			syncedConfigEntry.SynchronizedConfig = synchronizedSetting;
@@ -148,15 +154,19 @@ namespace MarsarahBuildPieces.Managers
 					GlacialStonePortal.TogglePortalVisibility();
 					break;
 
-				case var name when name == Configs.MysticalLightWard.Name:
-					MysticalLightWard.ToggleVisibility();
-					break;
-
 				case var name when name == Configs.BuildPiecesLighting.Name:
 					SilverSconce.ToggleVisibility();
 					GreenStandingBrazier.ToggleVisibility();
 					SilverHangingBrazier.ToggleVisibility();
 					ColoredDvergerLanterns.ToggleVisibility();
+					break;
+
+				case var name when name == Configs.MysticalLightWard.Name:
+					MysticalLightWard.ToggleVisibility();
+					break;
+
+				case var name when name == Configs.MysticalLightWardRadius.Name:
+					MysticalLightWard.RefreshRadius();
 					break;
 			}
 		}

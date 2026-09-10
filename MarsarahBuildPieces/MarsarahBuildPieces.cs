@@ -6,6 +6,7 @@ namespace MarsarahBuildPieces
 {
 	[BepInPlugin(ModGUID, ModName, ModVersion)]
 	[BepInDependency(Jotunn.Main.ModGuid, BepInDependency.DependencyFlags.HardDependency)]
+	[BepInDependency("Marsarah.MarsarahTweaks", BepInDependency.DependencyFlags.SoftDependency)]
 	public class MarsarahBuildPieces : BaseUnityPlugin
 	{
 		internal const string ModName = "MarsarahBuildPieces";
@@ -19,8 +20,9 @@ namespace MarsarahBuildPieces
 		private void Awake()
 		{
 			LogManager.SetGlobalLogLevel(LogManager.LogLevel.Info);
-
+			
 			ConfigManager.Init(Config);
+			CompatibilityManager.Initialize();
 
 			log.Info($"{ModName} {ModVersion} loaded.");
 

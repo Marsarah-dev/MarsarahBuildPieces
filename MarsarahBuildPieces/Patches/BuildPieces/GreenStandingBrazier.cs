@@ -60,8 +60,8 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			// Configure the Piece data and add to buiild menu
 			BuildPieceController.ConfigurePiece(GreenBrazierPrefab, "Furniture", new[]
 			{
-				BuildPieceController.MakeRequirement("Bronze", 5),
-				BuildPieceController.MakeRequirement("Guck", 2, false),
+				BuildPieceController.MakeRequirement("Bronze", CompatibilityManager.BuildPieceAmountsEnabled ? 3 : 5),
+				BuildPieceController.MakeRequirement("Guck", CompatibilityManager.PermanentLightsEnabled ? 5 : 2, false),
 				BuildPieceController.MakeRequirement("WolfClaw", 3)
 			});
 
@@ -351,6 +351,18 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			toggled &= BuildPieceController.TogglePiece(GreenBrazierPrefab?.GetComponent<Piece>(), enabled, log);
 
 			return toggled;
+		}
+
+		public static void RefreshGreenBrazierRequirements()
+		{
+			if (GreenBrazierPrefab == null)
+				return;
+
+			BuildPieceController.RefreshPieceRequirements(GreenBrazierPrefab.GetComponent<Piece>(), new Dictionary<string, int>
+			{
+				{ "Bronze", CompatibilityManager.BuildPieceAmountsEnabled ? 3 : 5 },
+				{ "Guck", CompatibilityManager.PermanentLightsEnabled ? 5 : 2 }
+			});
 		}
 	}
 }

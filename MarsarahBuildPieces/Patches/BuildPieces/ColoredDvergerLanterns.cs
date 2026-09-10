@@ -64,6 +64,8 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			ModifyLightSettings(DvergrLanternPrefabGreen, new Color(0.4f, 1f, 0.4f), greenEmission);
 			ModifyLightSettings(DvergrLanternPolePrefabGreen, new Color(0.4f, 1f, 0.4f), greenEmission);
 
+			UpdateColoredDvergrLanternsIntensity();
+
 			// Modify dvergr lantern icons
 			ModifyColoredDvergrLanternIcon(DvergrLanternPrefabBlue, new Color(0.3f, 0.85f, 1f));
 			ModifyColoredDvergrLanternIcon(DvergrLanternPrefabGreen, new Color(0.2f, 1f, 0.4f));
@@ -79,25 +81,25 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			// Configure the Piece data and add to buiild menu
 			BuildPieceController.ConfigurePiece(DvergrLanternPrefabBlue, "Furniture", new[]
 			{
-				BuildPieceController.MakeRequirement("Copper", 2),
+				BuildPieceController.MakeRequirement("Copper", CompatibilityManager.BuildPieceAmountsEnabled ? 1 : 2),
 				BuildPieceController.MakeRequirement("Lantern", 1),
 				BuildPieceController.MakeRequirement("Chain", 1)
 			});
 			BuildPieceController.ConfigurePiece(DvergrLanternPrefabGreen, "Furniture", new[]
 			{
-				BuildPieceController.MakeRequirement("Copper", 2),
+				BuildPieceController.MakeRequirement("Copper", CompatibilityManager.BuildPieceAmountsEnabled ? 1 : 2),
 				BuildPieceController.MakeRequirement("Lantern", 1),
 				BuildPieceController.MakeRequirement("Chain", 1)
 			});
 			BuildPieceController.ConfigurePiece(DvergrLanternPolePrefabBlue, "Furniture", new[]
 			{
-				BuildPieceController.MakeRequirement("Copper", 3),
+				BuildPieceController.MakeRequirement("Copper", CompatibilityManager.BuildPieceAmountsEnabled ? 2 : 3),
 				BuildPieceController.MakeRequirement("Lantern", 1),
 				BuildPieceController.MakeRequirement("Chain", 1)
 			});
 			BuildPieceController.ConfigurePiece(DvergrLanternPolePrefabGreen, "Furniture", new[]
 			{
-				BuildPieceController.MakeRequirement("Copper", 3),
+				BuildPieceController.MakeRequirement("Copper", CompatibilityManager.BuildPieceAmountsEnabled ? 2 : 3),
 				BuildPieceController.MakeRequirement("Lantern", 1),
 				BuildPieceController.MakeRequirement("Chain", 1)
 			});
@@ -351,6 +353,91 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			toggled &= BuildPieceController.TogglePiece(DvergrLanternPolePrefabGreen?.GetComponent<Piece>(), enabled, log);
 
 			return toggled;
+		}
+
+		public static void RefreshColoredDvergrLanternsRequirements()
+		{
+			BuildPieceController.RefreshPieceRequirements(DvergrLanternPrefabBlue.GetComponent<Piece>(),
+				new Dictionary<string, int>
+				{
+					{ "Copper", CompatibilityManager.BuildPieceAmountsEnabled? 1 : 2 }
+				}
+			);
+			BuildPieceController.RefreshPieceRequirements(DvergrLanternPrefabGreen.GetComponent<Piece>(),
+				new Dictionary<string, int>
+				{
+					{ "Copper", CompatibilityManager.BuildPieceAmountsEnabled? 1 : 2 }
+				}
+			);
+			BuildPieceController.RefreshPieceRequirements(DvergrLanternPolePrefabBlue.GetComponent<Piece>(),
+				new Dictionary<string, int>
+				{
+					{ "Copper", CompatibilityManager.BuildPieceAmountsEnabled? 2 : 3 }
+				}
+			);
+			BuildPieceController.RefreshPieceRequirements(DvergrLanternPolePrefabGreen.GetComponent<Piece>(),
+				new Dictionary<string, int>
+				{
+					{ "Copper", CompatibilityManager.BuildPieceAmountsEnabled? 2 : 3 }
+				}
+			);
+		}
+
+		public static void UpdateColoredDvergrLanternsIntensity()
+		{
+			UpdateLightIntensity(DvergrLanternPrefabBlue);
+			UpdateLightIntensity(DvergrLanternPrefabGreen);
+			UpdateLightIntensity(DvergrLanternPolePrefabBlue);
+			UpdateLightIntensity(DvergrLanternPolePrefabGreen);
+		}
+
+		private static void UpdateLightIntensity(GameObject prefab)
+		{
+			float defaultIntensity = 1.5f;
+			float defaultRange = 6f;
+			float defaultFlickerIntensity = 0.1f;
+			float defaultFlickerSpeed = 10f;
+
+			float brighterIntensity = 2f;
+			float brighterRange = prefab.name.Contains("pole") ? 15f : 9f;
+			float brighterFlickerIntensity = 0.05f;
+			float brighterFlickerSpeed = 5f;
+
+			Light lightComponent = prefab.GetComponentInChildren<Light>();
+			LightFlicker flicker = prefab.GetComponentInChildren<LightFlicker>();
+
+			if (CompatibilityManager.BrighterLanternsEnabled)
+			{
+				if (lightComponent != null)
+				{
+					lightComponent.intensity = brighterIntensity;
+					lightComponent.range = brighterRange;
+					log.Info($"Set intensity {brighterIntensity} and range {brighterRange} for {prefab.name}");
+				}
+
+				if (flicker != null)
+				{
+					flicker.m_flickerIntensity = brighterFlickerIntensity;
+					flicker.m_flickerSpeed = brighterFlickerSpeed;
+					log.Info($"Set flicker intensity {brighterFlickerIntensity} and speed {brighterFlickerSpeed} for {prefab.name}");
+				}
+			}
+			else
+			{
+				if (lightComponent != null)
+				{
+					lightComponent.intensity = defaultIntensity;
+					lightComponent.range = defaultRange;
+					log.Info($"Reverted intensity {defaultIntensity} and range {defaultRange} for {prefab.name}");
+				}
+
+				if (flicker != null)
+				{
+					flicker.m_flickerIntensity = defaultFlickerIntensity;
+					flicker.m_flickerSpeed = defaultFlickerSpeed;
+					log.Info($"Reverted flicker intensity {defaultFlickerIntensity} and speed {defaultFlickerSpeed} for {prefab.name}");
+				}
+			}
 		}
 	}
 }

@@ -83,20 +83,22 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			BuildPieceController.ConfigurePiece(SilverSconcePrefab, "Furniture", new[]
 			{
 				BuildPieceController.MakeRequirement("ElderBark", 2),
-				BuildPieceController.MakeRequirement("Silver", 2),
-				BuildPieceController.MakeRequirement("Resin", 2, false)
+				BuildPieceController.MakeRequirement("Silver", CompatibilityManager.BuildPieceAmountsEnabled ? 1 : 2),
+				BuildPieceController.MakeRequirement("Resin", CompatibilityManager.PermanentLightsEnabled ? 6 : 2, false)
 			});
+
 			BuildPieceController.ConfigurePiece(SilverSconcePrefabBlue, "Furniture", new[]
 			{
 				BuildPieceController.MakeRequirement("ElderBark", 2),
-				BuildPieceController.MakeRequirement("Silver", 2),
-				BuildPieceController.MakeRequirement("GreydwarfEye", 2, false)
+				BuildPieceController.MakeRequirement("Silver", CompatibilityManager.BuildPieceAmountsEnabled ? 1 : 2),
+				BuildPieceController.MakeRequirement("GreydwarfEye", CompatibilityManager.PermanentLightsEnabled ? 6 : 2, false)
 			});
+
 			BuildPieceController.ConfigurePiece(SilverSconcePrefabGreen, "Furniture", new[]
 			{
 				BuildPieceController.MakeRequirement("ElderBark", 2),
-				BuildPieceController.MakeRequirement("Silver", 2),
-				BuildPieceController.MakeRequirement("Guck", 2, false)
+				BuildPieceController.MakeRequirement("Silver", CompatibilityManager.BuildPieceAmountsEnabled ? 1 : 2),
+				BuildPieceController.MakeRequirement("Guck", CompatibilityManager.PermanentLightsEnabled ? 6 : 2, false)
 			});
 
 			// Set active
@@ -383,6 +385,30 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			toggled &= BuildPieceController.TogglePiece(SilverSconcePrefabGreen?.GetComponent<Piece>(), enabled, log);
 
 			return toggled;
+		}
+
+		public static void RefreshSilverSconceRequirements()
+		{
+			if (SilverSconcePrefab == null || SilverSconcePrefabBlue == null || SilverSconcePrefabGreen == null)
+				return;
+
+			BuildPieceController.RefreshPieceRequirements(SilverSconcePrefab.GetComponent<Piece>(), new Dictionary<string, int>
+			{
+				{ "Silver", CompatibilityManager.BuildPieceAmountsEnabled ? 1 : 2 },
+				{ "Resin", CompatibilityManager.PermanentLightsEnabled ? 6 : 2 }
+			});
+
+			BuildPieceController.RefreshPieceRequirements(SilverSconcePrefabBlue.GetComponent<Piece>(), new Dictionary<string, int>
+			{
+				{ "Silver", CompatibilityManager.BuildPieceAmountsEnabled ? 1 : 2 },
+				{ "GreydwarfEye", CompatibilityManager.PermanentLightsEnabled ? 6 : 2 }
+			});
+
+			BuildPieceController.RefreshPieceRequirements(SilverSconcePrefabGreen.GetComponent<Piece>(), new Dictionary<string, int>
+			{
+				{ "Silver", CompatibilityManager.BuildPieceAmountsEnabled ? 1 : 2 },
+				{ "Guck", CompatibilityManager.PermanentLightsEnabled ? 6 : 2 }
+			});
 		}
 	}
 }

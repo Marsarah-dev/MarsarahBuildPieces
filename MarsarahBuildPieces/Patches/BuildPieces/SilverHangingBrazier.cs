@@ -80,20 +80,20 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			// Configure the Piece data and add to buiild menu
 			BuildPieceController.ConfigurePiece(SilverHangingBrazierPrefab, "Furniture", new[]
 			{
-				BuildPieceController.MakeRequirement("Silver", 5),
-				BuildPieceController.MakeRequirement("Coal", 2, false),
+				BuildPieceController.MakeRequirement("Silver", CompatibilityManager.BuildPieceAmountsEnabled ? 3 : 5),
+				BuildPieceController.MakeRequirement("Coal", CompatibilityManager.PermanentLightsEnabled ? 5 : 2, false),
 				BuildPieceController.MakeRequirement("Chain", 1)
 			});
 			BuildPieceController.ConfigurePiece(SilverHangingBrazierPrefabBlue, "Furniture", new[]
 			{
-				BuildPieceController.MakeRequirement("Silver", 5),
-				BuildPieceController.MakeRequirement("GreydwarfEye", 2, false),
+				BuildPieceController.MakeRequirement("Silver", CompatibilityManager.BuildPieceAmountsEnabled ? 3 : 5),
+				BuildPieceController.MakeRequirement("GreydwarfEye", CompatibilityManager.PermanentLightsEnabled ? 5 : 2, false),
 				BuildPieceController.MakeRequirement("Chain", 1)
 			});
 			BuildPieceController.ConfigurePiece(SilverHangingBrazierPrefabGreen, "Furniture", new[]
 			{
-				BuildPieceController.MakeRequirement("Silver", 5),
-				BuildPieceController.MakeRequirement("Guck", 2, false),
+				BuildPieceController.MakeRequirement("Silver", CompatibilityManager.BuildPieceAmountsEnabled ? 3 : 5),
+				BuildPieceController.MakeRequirement("Guck", CompatibilityManager.PermanentLightsEnabled ? 5 : 2, false),
 				BuildPieceController.MakeRequirement("Chain", 1)
 			});
 
@@ -562,6 +562,30 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			toggled &= BuildPieceController.TogglePiece(SilverHangingBrazierPrefabGreen?.GetComponent<Piece>(), enabled, log);
 
 			return toggled;
+		}
+
+		public static void RefreshSilverHangingBrazierRequirements()
+		{
+			if (SilverHangingBrazierPrefab == null || SilverHangingBrazierPrefabBlue == null || SilverHangingBrazierPrefabGreen == null)
+				return;
+
+			BuildPieceController.RefreshPieceRequirements(SilverHangingBrazierPrefab.GetComponent<Piece>(), new Dictionary<string, int>
+			{
+				{ "Silver", CompatibilityManager.BuildPieceAmountsEnabled ? 3 : 5 },
+				{ "Coal", CompatibilityManager.PermanentLightsEnabled ? 5 : 2 }
+			});
+
+					BuildPieceController.RefreshPieceRequirements(SilverHangingBrazierPrefabBlue.GetComponent<Piece>(), new Dictionary<string, int>
+			{
+				{ "Silver", CompatibilityManager.BuildPieceAmountsEnabled ? 3 : 5 },
+				{ "GreydwarfEye", CompatibilityManager.PermanentLightsEnabled ? 5 : 2 }
+			});
+
+					BuildPieceController.RefreshPieceRequirements(SilverHangingBrazierPrefabGreen.GetComponent<Piece>(), new Dictionary<string, int>
+			{
+				{ "Silver", CompatibilityManager.BuildPieceAmountsEnabled ? 3 : 5 },
+				{ "Guck", CompatibilityManager.PermanentLightsEnabled ? 5 : 2 }
+			});
 		}
 	}
 }

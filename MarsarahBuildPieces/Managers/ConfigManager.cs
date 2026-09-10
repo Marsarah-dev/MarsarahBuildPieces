@@ -144,6 +144,10 @@ namespace MarsarahBuildPieces.Managers
 					PocketPortal.TogglePortalCoreVisibility();
 					break;
 
+				case var name when name == Configs.GlacialStonePortal.Name:
+					GlacialStonePortal.TogglePortalVisibility();
+					break;
+
 				case var name when name == Configs.BuildPiecesLighting.Name:
 					SilverSconce.ToggleVisibility();
 					GreenStandingBrazier.ToggleVisibility();

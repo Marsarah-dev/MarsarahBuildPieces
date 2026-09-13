@@ -545,7 +545,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				m_name = "portal_core_intro",
 				m_topic = "Pocket Portal",
 				m_label = "Portal Core",
-				m_text = "You've crafted a <color=yellow>Portal Core</color>.\nUse it to build a <color=yellow>Pocket Portal</color> which should make your exploration journeys easier.\nBut keep in mind that only one of these portals can be built in the world.\nHowever, you can always destroy it and place it somewhere else as needed.",
+				m_text = "You've crafted a <color=yellow>Portal Core</color>.\nUse it to build a <color=yellow>Pocket Portal</color> which should make your exploration journeys easier.\nBut keep in mind that you can only have one of these portals placed at a time.\nHowever, you can always destroy it and place it somewhere else as needed.",
 				m_isMunin = false
 			};
 

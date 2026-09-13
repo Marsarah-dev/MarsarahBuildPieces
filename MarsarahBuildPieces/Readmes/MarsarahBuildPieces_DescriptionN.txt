@@ -1,0 +1,231 @@
+[size=5][b]Marsarah Build Pieces[/b][/size]
+
+[b]Version:[/b] 1.0.0
+[b]Author:[/b] Marsarah
+
+[line]
+
+[size=5][b]🧰 About the Mod[/b][/size]
+
+Marsarah Build Pieces is a standalone collection of custom buildable pieces for Valheim, focused mainly on [b]functional pieces, portals and new light sources[/b] rather than large sets of architectural walls and floors.
+
+The mod began as the custom build-piece section of [b]Marsarah Tweaks[/b] and has now been separated into its own mod. It currently adds [b]14 buildable pieces[/b] plus the craftable [b]Portal Core[/b] item, including the Pocket Portal, Glacial Stone Portal, Mystical Light Ward, Silver light sources, a Green Standing Brazier and colored Dvergr Lanterns.
+
+All feature configs are synchronized using [b]ServerSync[/b], and the mod includes optional compatibility with MarsarahTweaks when both are installed.
+
+[line]
+
+[size=4][b]Development Notes[/b][/size]
+
+[b]Deep North / Spoiler Note:[/b] Deep North build pieces are intentionally not included yet.
+I want to experience the new biome and progression myself before digging through the game files, so I can play through it without spoiling the experience for myself.
+After completing the Deep North, I plan to review its build pieces and other relevant content for possible additions to this mod.
+
+[b]AI Usage Disclosure:[/b] The original build-piece features came from my MarsarahMod / Marsarah Tweaks projects. AI tools were later used to assist with porting and are now used as part of my development workflow for tasks such as debugging, refactoring, compatibility updates, researching game API changes, and documentation.
+Development remains human-directed: I decide what features are added, how they should behave, and I write code, review and test the changes included in releases. The mod's logo was also created using generative AI.
+
+[size=4][b]Related Marsarah Mods[/b][/size]
+- [b]MarsarahTweaks[/b] - Gameplay, balance, grind-reduction and quality-of-life tweaks. BuildPieces includes optional compatibility with several Tweaks features.
+- [b]MarsarahUI[/b] - Standalone UI and information improvements.
+- Neither mod is required to use Marsarah Build Pieces.
+
+[line]
+
+[size=5][b]🔒 Permissions[/b][/size]
+
+Reuploading this mod, whether in part or in full, is [b]not permitted[/b].
+Anyone is free to take inspiration or implement similar features, but must do so with their own code and assets.
+
+[line]
+
+[size=5][b]🧱 Requirements[/b][/size]
+
+This mod requires:
+- [url=https://valheim.thunderstore.io/package/denikson/BepInExPack_Valheim/][b]BepInEx for Valheim[/b][/url]
+- [url=https://valheim.thunderstore.io/package/ValheimModding/Jotunn/][b]Jotunn[/b][/url]
+
+For multiplayer, install the mod on the [b]server[/b] and [b]all clients[/b] so synchronized configuration and custom prefabs match.
+
+[line]
+
+[size=5][b]📦 Installation[/b][/size]
+
+1. Unpack the [i].zip[/i] file.
+2. Copy [i]MarsarahBuildPieces.dll[/i] into your [i]Valheim/BepInEx/plugins[/i] folder.
+3. Make sure [b]Jotunn[/b] is installed.
+
+Or use a mod manager.
+
+[line]
+
+[size=5][b]⚙️ Configuration[/b][/size]
+
+A config file is generated on first launch:
+[i]Valheim/BepInEx/config/Marsarah.MarsarahBuildPieces.cfg[/i]
+
+All BuildPieces settings are synchronized with the server. The configuration can be locked so only server administrators can change synchronized values.
+
+[b]Main settings:[/b]
+- Pocket Portal
+- Glacial Stone Portal
+- Extra Lights
+- Mystical Light Ward
+- Mystical Light Ward Radius: 5-50 meters, default [b]32m[/b]
+
+Feature toggles can be changed during gameplay. Close and reopen the relevant build/crafting menu when needed for the menu to refresh.
+
+[line]
+
+[size=5][b]💰 Donations[/b][/size]
+My mods are and will always be free to use. If you'd like to support my work, you can donate here:
+[url=https://paypal.me/Marsarah9]PayPal[/url]
+
+[line]
+
+[size=5][b]⚡ Main Features[/b][/size]
+
+[size=4][b]🔧 Pocket Portal[/b][/size]
+A portable portal designed to make exploration more convenient.
+
+- Adds a craftable [b]Portal Core[/b] item.
+- Crafted at a [b]level 4 Workbench[/b]: 5 Surtling Cores, 20 Fine Wood, 5 Freeze Glands, 20 Obsidian.
+- Portal Core maximum stack size: [b]1[/b]. Weight: [b]10[/b].
+- Pocket Portal build cost: [b]1 Portal Core[/b].
+- Each player can only have [b]one Pocket Portal[/b] placed at a time.
+- Destroying it allows that player to place it somewhere else.
+- Crafting the Portal Core introduces the feature through a custom Raven tutorial.
+
+[size=4][b]🔧 Glacial Stone Portal[/b][/size]
+- Enables an unused vanilla stone portal as a buildable Mountain-tier portal.
+- Requires a [b]Stonecutter[/b].
+- Build cost: 6 Stone, 2 Freeze Glands, 2 Surtling Cores.
+- Functions as a normal portal.
+- This is [b]not[/b] the Ashlands Stone Portal.
+- Integrates with [b]MarsarahTweaks Max Portals Per Player[/b] when both mods are installed.
+
+[size=4][b]🔧 Mystical Light Ward[/b][/size]
+- A smaller blue-glowing magical Ward that keeps fueled light sources inside its area permanently lit.
+- Requires a [b]Workbench[/b].
+- Build cost: 2 Fine Wood, 1 Silver, 2 Obsidian.
+- Default radius: [b]32 meters[/b]. Configurable from [b]5 to 50 meters[/b].
+- Radius is shown while placing the Ward and hidden afterward.
+- Refuels fueled lights inside its radius to maximum fuel.
+- Has [b]no normal Ward protection/ownership behavior[/b].
+- Existing Wards become dormant and lose their glow/effect if the feature is disabled.
+
+[size=4][b]🔧 Extra Lights[/b][/size]
+Adds [b]11 light-source build pieces[/b] across Mountain and Mistlands progression.
+
+[b]Green Standing Brazier[/b]
+- Green-flame Standing Brazier using Guck as fuel.
+- Requires a Forge.
+- Cost: 5 Bronze, 2 Guck, 3 Fenris Claws.
+
+[b]Silver Sconces[/b]
+- Silver Sconce - Resin
+- Blue-burning Silver Sconce - Greydwarf Eye
+- Green-burning Silver Sconce - Guck
+- Requires a Forge.
+- Each normally costs: 2 Ancient Bark, 2 Silver, 2 respective fuel.
+
+[b]Silver Hanging Braziers[/b]
+- Silver Hanging Brazier - Coal
+- Blue-burning Silver Hanging Brazier - Greydwarf Eye
+- Green-burning Silver Hanging Brazier - Guck
+- Requires a Forge.
+- Each normally costs: 5 Silver, 1 Chain, 2 respective fuel.
+
+[b]Colored Dvergr Lanterns[/b]
+- Blue-colored Dvergr Wall Lantern
+- Green-colored Dvergr Wall Lantern
+- Blue-colored Dvergr Pole Lantern
+- Green-colored Dvergr Pole Lantern
+- Requires a Black Forge.
+- Wall cost: 2 Copper, 1 Lantern, 1 Chain.
+- Pole cost: 3 Copper, 1 Lantern, 1 Chain.
+
+[line]
+
+[size=5][b]🔗 MarsarahTweaks Compatibility[/b][/size]
+
+MarsarahTweaks is an [b]optional soft dependency[/b]. BuildPieces works normally without it.
+
+[b]Cheaper Build Pieces Amounts[/b]
+- Green Standing Brazier Bronze: 5 → 3
+- Silver Sconce Silver: 2 → 1
+- Silver Hanging Brazier Silver: 5 → 3
+- Colored Dvergr Wall Lantern Copper: 2 → 1
+- Colored Dvergr Pole Lantern Copper: 3 → 2
+
+[b]Permanent Lights[/b]
+- Green Standing Brazier fuel: 2 → 5
+- Silver Hanging Brazier fuel: 2 → 5
+- Silver Sconce fuel: 2 → 6
+- [b]Permanent Lights and Mystical Light Ward are mutually exclusive.[/b] Enabling one while the other is active disables the other option.
+
+[b]Brighter Lanterns[/b]
+- Custom blue and green Dvergr Lanterns use matching brighter settings when Tweaks' Brighter Lanterns feature is enabled.
+
+[b]Max Portals Per Player[/b]
+- The Glacial Stone Portal is recognized by Tweaks' portal limit when both mods are installed.
+
+[line]
+
+[size=5][b]🔮 Future Plans[/b][/size]
+
+A planned future feature is the [b]Smart Dropbox[/b]: a functional container that automatically distributes deposited items into nearby containers that already contain the same item/type.
+
+Deep North build pieces and other relevant content will be reviewed after I have completed the biome myself.
+
+The above plans may change as development continues.
+
+[line]
+
+[size=5][b]💬 Feedback[/b][/size]
+Suggestions and bug reports are welcome on the [b]Posts[/b] or [b]Bugs[/b] tabs of the Nexusmods page.
+Thanks for checking out Marsarah Build Pieces!
+
+[size=5][b]🧑‍🤝‍🧑 Credits[/b][/size]
+- ValheimModding team - for Jotunn
+- Blaxxun-bloop - for ServerSync
+
+[size=5][b]📜 Version History[/b][/size]
+
+[size=4][b]v1.0.0[/b][/size]
+- [b]Initial standalone release.[/b]
+
+[b]Standalone Build Pieces Mod:[/b]
+- Moved the custom build-piece system previously included in Marsarah Tweaks into MarsarahBuildPieces.
+- Added Jotunn integration and ServerSync configuration support.
+- Added MarsarahTweaks as an optional soft dependency.
+
+[b]Pocket Portal:[/b]
+- Added the Pocket Portal and craftable Portal Core.
+- Portal Core recipe: 5 Surtling Cores, 20 Fine Wood, 5 Freeze Glands and 20 Obsidian at a level 4 Workbench.
+- Limited Pocket Portals to one placed portal per player.
+- Added a custom Raven tutorial.
+- Updated ownership / max-build handling.
+
+[b]Glacial Stone Portal:[/b]
+- Added the unused vanilla stone portal as a buildable Mountain-tier portal.
+- Requires a Stonecutter and costs 6 Stone, 2 Freeze Glands and 2 Surtling Cores.
+- Added MarsarahTweaks Max Portals Per Player integration.
+
+[b]Mystical Light Ward:[/b]
+- Added a local permanent-light mechanic that refuels fueled lights inside its radius.
+- Default radius 32m, configurable from 5m to 50m.
+- Added placement radius visualization.
+- Removed normal Ward behavior and the inherited vanilla Ward tutorial.
+- Existing Wards become dormant when the feature is disabled.
+
+[b]Extra Lights:[/b]
+- Added Green Standing Brazier.
+- Added three Silver Sconces.
+- Added three Silver Hanging Braziers.
+- Added blue/green Dvergr Wall and Pole Lanterns.
+
+[b]MarsarahTweaks Compatibility:[/b]
+- Cheaper Build Pieces Amounts integration.
+- Permanent Lights custom-light cost integration and mutual exclusion with Mystical Light Ward.
+- Brighter Lanterns integration for colored Dvergr Lanterns.
+- Max Portals Per Player support for Glacial Stone Portal.

@@ -29,8 +29,6 @@ TO IMPLEMENT
 
 A. Next Release / High Priority
 -------------------------------
-* Mystical Light Ward still triggers the normal Ward tutorial
-
 * Dedicated-server testing:
   - Pocket Portal ownership / limiter behavior.
   - Glacial Stone Portal interaction with Tweaks Max Portals Per Player.
@@ -50,12 +48,3 @@ D. Release / Documentation
 --------------------------
 * Final release packaging and documentation pass after compatibility testing.
 * Make sure the documentation clearly states that Deep North content is intentionally not included yet and will be added after the playthrough.
-
-
-============================================================
-MOVED / NO LONGER NEEDED HERE
-============================================================
-
-- Global Permanent Lights remains a MarsarahTweaks feature.
-- Do NOT recreate the old max-fuel build-cost compatibility behavior after Tweaks removes it.
-- Max Portals Per Player remains a MarsarahTweaks feature; MarsarahBuildPieces only supplies Glacial Stone Portal integration.

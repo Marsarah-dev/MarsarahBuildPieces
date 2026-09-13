@@ -33,7 +33,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 		[HarmonyPatch(typeof(Fireplace), "UpdateFireplace")]
 		private static class Fireplace_UpdateFireplace_Patch
 		{
-			// TODO: Remove this prefix when done testing light fuel
+			// This makes fuel burn faster. Meant for testing.
 			/*private static bool burnSpeedLogged;
 
 			private static void Prefix(Fireplace __instance)
@@ -115,15 +115,17 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 		private static void RemoveWardBehavior(GameObject prefab)
 		{
 			PrivateArea privateArea = prefab.GetComponent<PrivateArea>();
-			if (privateArea == null)
+			if (privateArea != null)
 			{
-				log.Warn("PrivateArea component was not found on the cloned ward.");
-				return;
+				Object.DestroyImmediate(privateArea);
 			}
 
-			Object.DestroyImmediate(privateArea);
+			foreach (GuidePoint guidePoint in prefab.GetComponentsInChildren<GuidePoint>(true))
+			{
+				Object.DestroyImmediate(guidePoint);
+			}
 
-			log.Info("Removed normal Ward behavior from Mystical Light Ward.");
+			log.Info("Removed normal Ward behavior and tutorial from Mystical Light Ward.");
 		}
 
 		private static void SetupMysticalWardDefaults(GameObject prefab)

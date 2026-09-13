@@ -69,7 +69,7 @@ namespace MarsarahBuildPieces.Managers
 			SilverSconce.RefreshSilverSconceRequirements();
 			GreenStandingBrazier.RefreshGreenBrazierRequirements();
 			SilverHangingBrazier.RefreshSilverHangingBrazierRequirements();
-			ColoredDvergerLanterns.RefreshColoredDvergrLanternsRequirements();
+			ColoredDvergrLanterns.RefreshColoredDvergrLanternsRequirements();
 
 			log.Info("Refreshed custom light requirements from MarsarahTweaks settings.");
 		}
@@ -79,7 +79,7 @@ namespace MarsarahBuildPieces.Managers
 			if (ZNetScene.instance == null)
 				return;
 
-			ColoredDvergerLanterns.UpdateColoredDvergrLanternsIntensity();
+			ColoredDvergrLanterns.UpdateColoredDvergrLanternsIntensity();
 
 			log.Info("Refreshed colored Dvergr lantern intensity from MarsarahTweaks settings.");
 		}

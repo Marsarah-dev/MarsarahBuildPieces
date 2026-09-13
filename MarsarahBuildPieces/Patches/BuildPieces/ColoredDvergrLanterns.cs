@@ -1,16 +1,11 @@
 ﻿using HarmonyLib;
-using Jotunn.Configs;
 using MarsarahBuildPieces.Managers;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 
 namespace MarsarahBuildPieces.Patches.BuildPieces
 {
-	internal class ColoredDvergerLanterns
+	internal static class ColoredDvergrLanterns
 	{
 		private static readonly LogManager log = new LogManager("Colored Dverger Lanterns", LogManager.LogLevel.Warning);
 
@@ -78,7 +73,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			MPrefabManager.RegisterToZNetScene(DvergrLanternPolePrefabBlue);
 			MPrefabManager.RegisterToZNetScene(DvergrLanternPolePrefabGreen);
 
-			// Configure the Piece data and add to buiild menu
+			// Configure the Piece data and add to build menu
 			BuildPieceController.ConfigurePiece(DvergrLanternPrefabBlue, "Furniture", new[]
 			{
 				BuildPieceController.MakeRequirement("Copper", CompatibilityManager.BuildPieceAmountsEnabled ? 1 : 2),

@@ -21,7 +21,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				toggled &= GlacialStonePortal.TogglePortalVisibility();
 				toggled &= MysticalLightWard.ToggleVisibility();
 				toggled &= SilverSconce.ToggleVisibility();
-				toggled &= ColoredDvergerLanterns.ToggleVisibility();
+				toggled &= ColoredDvergrLanterns.ToggleVisibility();
 				toggled &= GreenStandingBrazier.ToggleVisibility();
 				toggled &= SilverHangingBrazier.ToggleVisibility();
 
@@ -56,9 +56,9 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			log.Info($"Registered prefab '{prefab.name}' in build menu under '{category}'.");
 		}
 
-		public static RequirementConfig MakeRequirement(string item, int amount, bool givenRecover = true)
+		public static RequirementConfig MakeRequirement(string item, int amount, bool recover = true)
 		{
-			return new RequirementConfig(item, amount, recover: givenRecover);
+			return new RequirementConfig(item, amount, recover: recover);
 		}
 
 		public static void RefreshPieceRequirements(Piece piece, Dictionary<string, int> amounts)

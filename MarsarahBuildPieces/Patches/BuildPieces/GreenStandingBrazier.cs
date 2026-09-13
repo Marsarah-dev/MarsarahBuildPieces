@@ -1,16 +1,12 @@
 ﻿using HarmonyLib;
-using Jotunn.Configs;
 using MarsarahBuildPieces.Managers;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 
 namespace MarsarahBuildPieces.Patches.BuildPieces
 {
-	internal class GreenStandingBrazier
+	internal static class GreenStandingBrazier
 	{
 		private static readonly LogManager log = new LogManager("Green Standing Brazier", LogManager.LogLevel.Warning);
 
@@ -57,7 +53,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			// Add green brazier to ZNetScene
 			MPrefabManager.RegisterToZNetScene(GreenBrazierPrefab);
 
-			// Configure the Piece data and add to buiild menu
+			// Configure the Piece data and add to build menu
 			BuildPieceController.ConfigurePiece(GreenBrazierPrefab, "Furniture", new[]
 			{
 				BuildPieceController.MakeRequirement("Bronze", CompatibilityManager.BuildPieceAmountsEnabled ? 3 : 5),
@@ -302,7 +298,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			croppedTex.ReadPixels(atlasRect, 0, 0);
 			croppedTex.Apply();
 
-			Color targetTint = new Color(0.2f, 1f, 0.4f);
 			Color[] pixels = croppedTex.GetPixels();
 			for (int i = 0; i < pixels.Length; i++)
 			{

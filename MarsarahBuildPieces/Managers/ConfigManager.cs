@@ -17,6 +17,7 @@ namespace MarsarahBuildPieces.Managers
 			CurrentVersion = MarsarahBuildPieces.ModVersion,
 			MinimumRequiredVersion = MarsarahBuildPieces.ModVersion
 		};
+		private static FileSystemWatcher watcher;
 
 		private static string ConfigFileName => MarsarahBuildPieces.ModGUID + ".cfg";
 		private static string ConfigFileFullPath => Paths.ConfigPath + Path.DirectorySeparatorChar + ConfigFileName;
@@ -57,7 +58,7 @@ namespace MarsarahBuildPieces.Managers
 
 			public static readonly ConfigMetadata MysticalLightWard = new ConfigMetadata(
 				"04 - Mystical Light Ward",
-				"Adds a small ward starting with the Mountain biome. When built, it keeps fueled light sources within its radius permanently lit.. (Toggling mid-game requires reloading the build/crafting menu)");
+				"Adds a small ward starting with the Mountain biome. When built, it keeps fueled light sources within its radius permanently lit. (Toggling mid-game requires reloading the build/crafting menu)");
 			
 			public static readonly ConfigMetadata MysticalLightWardRadius = new ConfigMetadata(
 				"05 - Mystical Light Ward Radius",
@@ -104,7 +105,7 @@ namespace MarsarahBuildPieces.Managers
 
 		private static void SetupWatcher()
 		{
-			FileSystemWatcher watcher = new FileSystemWatcher(Paths.ConfigPath, ConfigFileName)
+			watcher = new FileSystemWatcher(Paths.ConfigPath, ConfigFileName)
 			{
 				IncludeSubdirectories = true,
 				SynchronizingObject = ThreadingHelper.SynchronizingObject,
@@ -158,7 +159,7 @@ namespace MarsarahBuildPieces.Managers
 					SilverSconce.ToggleVisibility();
 					GreenStandingBrazier.ToggleVisibility();
 					SilverHangingBrazier.ToggleVisibility();
-					ColoredDvergerLanterns.ToggleVisibility();
+					ColoredDvergrLanterns.ToggleVisibility();
 					break;
 
 				case var name when name == Configs.MysticalLightWard.Name:

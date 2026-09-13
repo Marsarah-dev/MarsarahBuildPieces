@@ -5,6 +5,7 @@
     <AssemblyName>MarsarahBuildPieces</AssemblyName>
     <RootNamespace>MarsarahBuildPieces</RootNamespace>
     <LangVersion>latest</LangVersion>
+	<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
 
   <ItemGroup>

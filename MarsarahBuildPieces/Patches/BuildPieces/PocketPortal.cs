@@ -1,25 +1,17 @@
 ﻿using HarmonyLib;
-using Jotunn;
 using Jotunn.Configs;
-using Jotunn.Entities;
-using Jotunn.Managers;
 using MarsarahBuildPieces.Managers;
 using Splatform;
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using static EffectList;
-using static UnityEngine.UI.Image;
-using static ZDOExtraData;
 
 namespace MarsarahBuildPieces.Patches.BuildPieces
 {
 	public static class PocketPortal
 	{
-		private static readonly LogManager log = new LogManager("Pocket Portal", LogManager.LogLevel.Info);
+		private static readonly LogManager log = new LogManager("Pocket Portal", LogManager.LogLevel.Warning);
 
 		private static bool initialized = false;
 		private static GameObject PocketPortalPrefab;

@@ -29,18 +29,12 @@ TO IMPLEMENT
 
 A. Next Release / High Priority
 -------------------------------
-* Remove the old MarsarahTweaks Permanent Lights compatibility behavior that increases custom light fuel/build requirements. (need to decide if I do this)
-  - Permanent Lights will remain in Tweaks.
-  - Tweaks is removing its max-fuel build-cost behavior.
-  - Silver Sconce / Braziers / custom lights should therefore keep their normal MarsarahBuildPieces requirements.
+* Mystical Light Ward still triggers the normal Ward tutorial
 
 * Dedicated-server testing:
   - Pocket Portal ownership / limiter behavior.
   - Glacial Stone Portal interaction with Tweaks Max Portals Per Player.
   - General multiplayer placement/removal/ownership behavior.
-
-* Complete the Valheim 1.0 compatibility pass against the current game assemblies.
-* Final consistency cleanup for logging, naming, arrangement/style and stale compatibility code.
 
 B. Deep North / 1.0 Content
 ---------------------------

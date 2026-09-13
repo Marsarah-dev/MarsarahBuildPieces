@@ -1,16 +1,12 @@
 ﻿using HarmonyLib;
-using Jotunn.Configs;
 using MarsarahBuildPieces.Managers;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 
 namespace MarsarahBuildPieces.Patches.BuildPieces
 {
-	internal class SilverHangingBrazier
+	internal static class SilverHangingBrazier
 	{
 		private static readonly LogManager log = new LogManager("Silver Hanging Brazier", LogManager.LogLevel.Warning);
 
@@ -77,7 +73,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			MPrefabManager.RegisterToZNetScene(SilverHangingBrazierPrefabBlue);
 			MPrefabManager.RegisterToZNetScene(SilverHangingBrazierPrefabGreen);
 
-			// Configure the Piece data and add to buiild menu
+			// Configure the Piece data and add to build menu
 			BuildPieceController.ConfigurePiece(SilverHangingBrazierPrefab, "Furniture", new[]
 			{
 				BuildPieceController.MakeRequirement("Silver", CompatibilityManager.BuildPieceAmountsEnabled ? 3 : 5),
@@ -271,10 +267,10 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				GameObject clone = UnityEngine.Object.Instantiate(sourceTransform.gameObject, targetPrefab.transform);
 				clone.name = variant;
 
-				foreach (Transform child in clone.transform)
+				/*foreach (Transform child in clone.transform)
 				{
 					log.Info($"Child of {variant}: {child.name}");
-				}
+				}*/
 
 				// Copy transforms exactly
 				clone.transform.localPosition = sourceTransform.localPosition;

@@ -7,7 +7,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 {
 	internal static class MysticalLightWard
 	{
-		private static readonly LogManager log = new LogManager("Mystical Light Ward", LogManager.LogLevel.Info);
+		private static readonly LogManager log = new LogManager("Mystical Light Ward", LogManager.LogLevel.Warning);
 
 		private static bool initialized;
 		private static GameObject MysticalWardPrefab;
@@ -34,7 +34,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 		private static class Fireplace_UpdateFireplace_Patch
 		{
 			// TODO: Remove this prefix when done testing light fuel
-			private static bool burnSpeedLogged;
+			/*private static bool burnSpeedLogged;
 
 			private static void Prefix(Fireplace __instance)
 			{
@@ -42,10 +42,10 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 				if (!burnSpeedLogged)
 				{
-					log.Info("Temporary testing: fireplace fuel burn time set to 5 seconds per fuel.");
+					log.Info("Temporary testing: fireplace fuel burn time set to 3 seconds per fuel.");
 					burnSpeedLogged = true;
 				}
-			}
+			}*/
 
 			private static void Postfix(Fireplace __instance, ref ZNetView ___m_nview)
 			{

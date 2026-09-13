@@ -1,18 +1,11 @@
 ﻿using HarmonyLib;
-using Jotunn;
-using Jotunn.Configs;
 using MarsarahBuildPieces.Managers;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
-using static UnityEngine.EventSystems.EventTrigger;
 
 namespace MarsarahBuildPieces.Patches.BuildPieces
 {
-	internal class SilverSconce
+	internal static class SilverSconce
 	{
 		private static readonly LogManager log = new LogManager("Silver Sconce", LogManager.LogLevel.Warning);
 

@@ -6,7 +6,7 @@ namespace MarsarahBuildPieces.Managers
 {
 	internal static class CompatibilityManager
 	{
-		private static readonly LogManager log = new LogManager("Compatibility Manager", LogManager.LogLevel.Info);
+		private static readonly LogManager log = new LogManager("Compatibility Manager", LogManager.LogLevel.Warning);
 
 		private const string TweaksGuid = "Marsarah.MarsarahTweaks";
 

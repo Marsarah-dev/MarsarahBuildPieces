@@ -8,7 +8,7 @@ namespace MarsarahBuildPieces.Managers
 {
 	public static class ConfigManager
 	{
-		private static readonly LogManager log = new LogManager("Config Manager", LogManager.LogLevel.Info);
+		private static readonly LogManager log = new LogManager("Config Manager", LogManager.LogLevel.Warning);
 
 		private static ConfigFile Config;
 		private static readonly ConfigSync configSync = new ConfigSync(MarsarahBuildPieces.ModGUID)

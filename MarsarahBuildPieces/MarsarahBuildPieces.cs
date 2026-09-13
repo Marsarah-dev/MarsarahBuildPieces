@@ -15,7 +15,7 @@ namespace MarsarahBuildPieces
 		public const string ModGUID = Author + "." + ModName;
 
 		private readonly Harmony harmony = new Harmony(ModGUID);
-		private static readonly LogManager log = new LogManager(nameof(MarsarahBuildPieces), LogManager.LogLevel.Info);
+		private static readonly LogManager log = new LogManager(nameof(MarsarahBuildPieces), LogManager.LogLevel.Warning);
 
 		private void Awake()
 		{

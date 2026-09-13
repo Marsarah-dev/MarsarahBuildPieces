@@ -43,7 +43,6 @@ TO IMPLEMENT/TEST
 ============================================================
 
 A. Testing:
-* Pocket Portal ownership / max-build handling still needs dedicated-server testing.
 
 B. Next Release / High Priority
 -------------------------------

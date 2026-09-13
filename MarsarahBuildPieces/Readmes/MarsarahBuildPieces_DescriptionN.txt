@@ -25,8 +25,9 @@ After completing the Deep North, I plan to review its build pieces and other rel
 Development remains human-directed: I decide what features are added, how they should behave, and I write code, review and test the changes included in releases. The mod's logo was also created using generative AI.
 
 [size=4][b]Related Marsarah Mods[/b][/size]
-- [b]MarsarahTweaks[/b] - Gameplay, balance, grind-reduction and quality-of-life tweaks. BuildPieces includes optional compatibility with several Tweaks features.
-- [b]MarsarahUI[/b] - Standalone UI and information improvements.
+
+- [url=https://www.nexusmods.com/valheim/mods/3022][b]MarsarahTweaks[/b][/url] - Gameplay, balance, grind-reduction and quality-of-life tweaks. BuildPieces includes optional compatibility with several Tweaks features.
+- [url=https://www.nexusmods.com/valheim/mods/3710][b]MarsarahUI[/b][/url] - Standalone UI and information improvements.
 - Neither mod is required to use Marsarah Build Pieces.
 
 [line]

@@ -26,8 +26,8 @@ Development remains human-directed: I decide what features are added, how they s
 
 ### **Related Marsarah Mods**
 
-- **MarsarahTweaks** - Gameplay, balance, grind-reduction and quality-of-life tweaks. BuildPieces includes optional compatibility with several Tweaks features.
-- **MarsarahUI** - Standalone UI and information improvements.
+- [**MarsarahTweaks**](https://old.thunderstore.io/c/valheim/p/Marsarah/MarsarahTweaks/) - Gameplay, balance, grind-reduction and quality-of-life tweaks. BuildPieces includes optional compatibility with several Tweaks features.
+- [**MarsarahUI**](https://old.thunderstore.io/c/valheim/p/Marsarah/MarsarahUI/) - Standalone UI and information improvements.
 - Neither mod is required to use Marsarah Build Pieces.
 
 ---

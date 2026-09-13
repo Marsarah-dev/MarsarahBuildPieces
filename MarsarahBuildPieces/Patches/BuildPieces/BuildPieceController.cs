@@ -98,7 +98,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			if (ObjectDB.instance == null)
 			{
-				specificLog.Warn("ObjectDB is not ready yet.");
+				specificLog.Info("ObjectDB is not ready yet.");
 				return false;
 			}
 

@@ -8,26 +8,44 @@ IMPLEMENTED - NOT RELEASED / CURRENT WORK
 A. Standalone Mod Split
 -----------------------
 * Moved the custom build-piece system out of MarsarahTweaks into MarsarahBuildPieces.
-* Ported the existing custom build pieces and related managers/configuration to the standalone mod.
 * Added MarsarahTweaks as a soft dependency for optional compatibility.
+* The following build pieces were ported: 
+  - Pocket Portal
+  - All extra lights
 
-B. Build Pieces / Features
---------------------------
-* Mystical Light Ward added as the local, immersive permanent-light option.
-* Pocket Portal ownership / max-build handling updated.
-* Glacial Stone Portal integrates with MarsarahTweaks Max Portals Per Player when both mods are installed.
+B. Fixes
+-----------------------
+* Pocket Portal ownership / max-build handling updated. 
+
+B. New additions
+-----------------------
+* Mystical Light Ward 
+  - Added as the local, immersive permanent-light option.
+  - Refuels all lights that use fuel in an area around the ward. 
+  - Area configurable in config.
+* Glacial Stone Portal 
+  - Added the unused Stone Portal prefab as a buildable piece. 
+  - Build costs:
+    - Stone: 6
+    - Freeze Gland: 2
+    - Surtling Core: 2
+  - Requires Stonecutter
+  - Integrates with MarsarahTweaks Max Portals Per Player when both mods are installed.
 
 C. Compatibility
----------------
-* MarsarahTweaks compatibility is handled through the standalone CompatibilityManager.
+-----------------------
+* Compatible with MarsarahTweaks.
+  - Exclusive toggle of Marsarah Tweaks Permanent Lights and Marsarah Build Pieces Mystical Light Ward.
+
+
+============================================================
+TO IMPLEMENT/TEST
+============================================================
+
+A. Testing:
 * Pocket Portal ownership / max-build handling still needs dedicated-server testing.
 
-
-============================================================
-TO IMPLEMENT
-============================================================
-
-A. Next Release / High Priority
+B. Next Release / High Priority
 -------------------------------
 * Dedicated-server testing:
   - Pocket Portal ownership / limiter behavior.

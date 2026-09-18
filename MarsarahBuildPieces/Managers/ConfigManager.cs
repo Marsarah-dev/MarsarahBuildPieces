@@ -32,37 +32,60 @@ namespace MarsarahBuildPieces.Managers
 		{
 			public string Name;
 			public string Description;
+			public string Section;
+			public int Order;
 
-			public ConfigMetadata(string name, string description)
+			public ConfigMetadata(string name, string description, string section, int order)
 			{
 				Name = name;
 				Description = description;
+				Section = section;
+				Order = order;
 			}
+		}
+
+		private sealed class ConfigurationManagerAttributes
+		{
+			public int? Order;
 		}
 
 		public static class Configs
 		{
-			public static readonly ConfigMetadata ServerConfig = new ConfigMetadata("Lock Configuration", "If on, only server admins can change the configuration.");
+			public static readonly ConfigMetadata ServerConfig = new ConfigMetadata(
+				"Lock Configuration",
+				"If on, only server admins can change the configuration.",
+				ConfigSections.Main,
+				10);
 
 			public static readonly ConfigMetadata PocketPortal = new ConfigMetadata(
-				"01 - Pocket Portal",
-				"Adds a new portal that is built from a Portal Core that only takes one inventory slot, which can be crafted at a Workbench starting with the Mountain biome. Can only build one Pocket Portal per player. (Toggling mid-game requires reloading the build/crafting menu)");
+				"Pocket Portal",
+				"Adds a new portal that is built from a Portal Core that only takes one inventory slot, which can be crafted at a Workbench starting with the Mountain biome. Can only build one Pocket Portal per player. (Toggling mid-game requires reloading the build/crafting menu)",
+				ConfigSections.BuildPieces,
+				50);
 
 			public static readonly ConfigMetadata GlacialStonePortal = new ConfigMetadata(
-				"02 - Glacial Stone Portal",
-				"Enables the unused stone portal and adds it to the build menu. Works like a normal portal and is not to be confused with the Stone Portal from Ashlands. Unlocked at the Mountain biome. (Toggling mid-game requires reloading the build/crafting menu)");
+				"Glacial Stone Portal",
+				"Enables the unused stone portal and adds it to the build menu. Works like a normal portal and is not to be confused with the Stone Portal from Ashlands. Unlocked at the Mountain biome. (Toggling mid-game requires reloading the build/crafting menu)",
+				ConfigSections.BuildPieces,
+				40);
 
 			public static readonly ConfigMetadata BuildPiecesLighting = new ConfigMetadata(
-				"03 - Extra Lights",
-				"Adds new light sources including the Silver Sconce, Green Standing Brazier, Silver Hanging Brazier, and Colored Dverger Lanterns, unlocked at the Mountain and Mistlands biomes. (Toggling mid-game requires reloading the build/crafting menu)");
+				"Extra Lights",
+				"Adds new light sources including the Silver Sconce, Green Standing Brazier, Silver Hanging Brazier, and Colored Dverger Lanterns, unlocked at the Mountain and Mistlands biomes. (Toggling mid-game requires reloading the build/crafting menu)",
+				ConfigSections.BuildPieces,
+				30);
 
 			public static readonly ConfigMetadata MysticalLightWard = new ConfigMetadata(
-				"04 - Mystical Light Ward",
-				"Adds a small ward starting with the Mountain biome. When built, it keeps fueled light sources within its radius permanently lit. (Toggling mid-game requires reloading the build/crafting menu)");
-			
+				"Mystical Light Ward",
+				"Adds a small ward starting with the Mountain biome. When built, it keeps fueled light sources within its radius permanently lit. (Toggling mid-game requires reloading the build/crafting menu)",
+				ConfigSections.BuildPieces,
+				20);
+
 			public static readonly ConfigMetadata MysticalLightWardRadius = new ConfigMetadata(
-				"05 - Mystical Light Ward Radius",
-				"Sets the effect radius of the Mystical Light Ward in meters.");
+				"Mystical Light Ward Radius",
+				"Sets the effect radius of the Mystical Light Ward in meters.",
+				ConfigSections.BuildPieces,
+				10);
 		}
 
 		public static ConfigEntry<bool> ServerConfigLocked;
@@ -77,28 +100,33 @@ namespace MarsarahBuildPieces.Managers
 		{
 			Config = configFile;
 
-			ServerConfigLocked = CreateConfig(ConfigSections.Main, Configs.ServerConfig.Name, true, Configs.ServerConfig.Description);
+			ServerConfigLocked = CreateConfig(Configs.ServerConfig, true);
 			_ = configSync.AddLockingConfigEntry(ServerConfigLocked);
 
-			PocketPortalEnabled = CreateConfig(ConfigSections.BuildPieces, Configs.PocketPortal.Name, true, Configs.PocketPortal.Description);
-			GlacialStonePortalEnabled = CreateConfig(ConfigSections.BuildPieces, Configs.GlacialStonePortal.Name, true, Configs.GlacialStonePortal.Description);
-			BuildPiecesLightingEnabled = CreateConfig(ConfigSections.BuildPieces, Configs.BuildPiecesLighting.Name, true, Configs.BuildPiecesLighting.Description);
-			MysticalLightWardEnabled = CreateConfig(ConfigSections.BuildPieces, Configs.MysticalLightWard.Name, true, Configs.MysticalLightWard.Description);
-			MysticalLightWardRadius = CreateConfig(ConfigSections.BuildPieces, Configs.MysticalLightWardRadius.Name, 32, Configs.MysticalLightWardRadius.Description, true,	new AcceptableValueRange<int>(5, 50));
+			PocketPortalEnabled = CreateConfig(Configs.PocketPortal, true);
+			GlacialStonePortalEnabled = CreateConfig(Configs.GlacialStonePortal, true);
+			BuildPiecesLightingEnabled = CreateConfig(Configs.BuildPiecesLighting, true);
+			MysticalLightWardEnabled = CreateConfig(Configs.MysticalLightWard, true);
+			MysticalLightWardRadius = CreateConfig(Configs.MysticalLightWardRadius, 32, true, new AcceptableValueRange<int>(5, 50));
 
 			SetupWatcher();
 
 			log.Info("Build Pieces configuration initialized.");
 		}
 
-		private static ConfigEntry<T> CreateConfig<T>(string group, string name, T defaultValue, string description, bool synchronizedSetting = true, AcceptableValueBase acceptableValues = null)
+		private static ConfigEntry<T> CreateConfig<T>(ConfigMetadata metadata, T defaultValue, bool synchronizedSetting = true, AcceptableValueBase acceptableValues = null)
 		{
-			ConfigEntry<T> configEntry = Config.Bind(group, name, defaultValue, new ConfigDescription(description, acceptableValues));
+			ConfigurationManagerAttributes attributes = new ConfigurationManagerAttributes
+			{
+				Order = metadata.Order
+			};
+
+			ConfigEntry<T> configEntry = Config.Bind(metadata.Section, metadata.Name, defaultValue, new ConfigDescription(metadata.Description, acceptableValues, attributes));
 
 			SyncedConfigEntry<T> syncedConfigEntry = configSync.AddConfigEntry(configEntry);
 			syncedConfigEntry.SynchronizedConfig = synchronizedSetting;
 
-			configEntry.SettingChanged += (_, __) => OnConfigChanged(name);
+			configEntry.SettingChanged += (_, __) => OnConfigChanged(metadata.Name);
 
 			return configEntry;
 		}

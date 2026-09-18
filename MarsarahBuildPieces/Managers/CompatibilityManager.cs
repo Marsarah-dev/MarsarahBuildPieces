@@ -29,9 +29,9 @@ namespace MarsarahBuildPieces.Managers
 
 			ConfigFile tweaksConfig = pluginInfo.Instance.Config;
 
-			tweaksBuildPieceAmounts = GetBoolConfig(tweaksConfig, "2 - Grind Reduction (Synced with Server)", "4 - Cheaper Build Pieces Amounts");
-			tweaksPermanentLights = GetBoolConfig(tweaksConfig, "5 - QOL (Synced with Server)", "13 - Permanent Lights");
-			tweaksBrighterLanterns = GetBoolConfig(tweaksConfig, "4 - Features (Synced with Server)", "10 - Brighter Lanterns");
+			tweaksBuildPieceAmounts = GetBoolConfig(tweaksConfig, "2 - Grind Reduction (Synced with Server)", "Cheaper Build Pieces Amounts");
+			tweaksPermanentLights = GetBoolConfig(tweaksConfig, "5 - QOL (Synced with Server)", "Permanent Lights");
+			tweaksBrighterLanterns = GetBoolConfig(tweaksConfig, "4 - Features (Synced with Server)", "Brighter Lanterns");
 
 			if (tweaksBuildPieceAmounts != null)
 				tweaksBuildPieceAmounts.SettingChanged += (_, __) => RefreshLightRequirements();

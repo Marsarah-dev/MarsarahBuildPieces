@@ -10,7 +10,7 @@ namespace MarsarahBuildPieces
 	public class MarsarahBuildPieces : BaseUnityPlugin
 	{
 		internal const string ModName = "MarsarahBuildPieces";
-		internal const string ModVersion = "1.0.0";
+		internal const string ModVersion = "1.0.1";
 		internal const string Author = "Marsarah";
 		public const string ModGUID = Author + "." + ModName;
 

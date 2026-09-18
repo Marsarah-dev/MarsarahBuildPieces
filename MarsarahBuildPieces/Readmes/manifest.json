@@ -1,0 +1,10 @@
+{
+    "name": "MarsarahBuildPieces",
+    "version_number": "1.0.0",
+    "website_url": "https://www.nexusmods.com/valheim/mods/3713",
+    "description": "Build-piece expansion with the Pocket Portal, Glacial Stone Portal, Mystical Light Ward, colored Dvergr lanterns, Silver Sconces, Silver Hanging Braziers, and more.",
+    "dependencies": [
+        "denikson-BepInExPack_Valheim-5.4.2350",
+        "ValheimModding-Jotunn-2.28.0"
+    ]
+}

@@ -5,37 +5,15 @@ MARSARAHBUILDPIECES TODO
 IMPLEMENTED - NOT RELEASED / CURRENT WORK
 ============================================================
 
-A. Standalone Mod Split
+A. Fixes
 -----------------------
-* Moved the custom build-piece system out of MarsarahTweaks into MarsarahBuildPieces.
-* Added MarsarahTweaks as a soft dependency for optional compatibility.
-* The following build pieces were ported: 
-  - Pocket Portal
-  - All extra lights
 
-B. Fixes
+B. Updates
 -----------------------
-* Pocket Portal ownership / max-build handling updated. 
+- Reorganized configuration entries to remove numbered setting names and use Configuration Manager ordering instead.
 
-B. New additions
+C. New additions
 -----------------------
-* Mystical Light Ward 
-  - Added as the local, immersive permanent-light option.
-  - Refuels all lights that use fuel in an area around the ward. 
-  - Area configurable in config.
-* Glacial Stone Portal 
-  - Added the unused Stone Portal prefab as a buildable piece. 
-  - Build costs:
-    - Stone: 6
-    - Freeze Gland: 2
-    - Surtling Core: 2
-  - Requires Stonecutter
-  - Integrates with MarsarahTweaks Max Portals Per Player when both mods are installed.
-
-C. Compatibility
------------------------
-* Compatible with MarsarahTweaks.
-  - Exclusive toggle of Marsarah Tweaks Permanent Lights and Marsarah Build Pieces Mystical Light Ward.
 
 
 ============================================================
@@ -46,10 +24,6 @@ A. Testing:
 
 B. Next Release / High Priority
 -------------------------------
-* Dedicated-server testing:
-  - Pocket Portal ownership / limiter behavior.
-  - Glacial Stone Portal interaction with Tweaks Max Portals Per Player.
-  - General multiplayer placement/removal/ownership behavior.
 
 B. Deep North / 1.0 Content
 ---------------------------
@@ -57,6 +31,7 @@ B. Deep North / 1.0 Content
 
 C. New Build Pieces / Features
 ------------------------------
+* Implement smaller sign board piece. (just clone the default and resize smaller and add as new piece)
 * Smart Dropbox:
   - Items placed inside are automatically moved to nearby containers.
   - Only move an item to a container that already contains that item/type.

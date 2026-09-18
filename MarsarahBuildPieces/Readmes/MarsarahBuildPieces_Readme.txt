@@ -1,4 +1,4 @@
-Marsarah Build Pieces v1.0.0
+Marsarah Build Pieces v1.0.1
 ================================================================
 Marsarah Build Pieces is a standalone collection of custom buildable pieces for Valheim, focused mainly on functional pieces, portals and light sources rather than large sets of architectural walls and floors.
 
@@ -435,6 +435,10 @@ Blaxxun-bloop - ServerSync
 
 VERSION HISTORY
 ================================================================
+
+v1.0.1
+- Reorganized configuration entries to remove numbered setting names and use Configuration Manager ordering instead.
+
 v1.0.0
 - Initial standalone release.
 

@@ -1,5 +1,8 @@
 ## <strong> 📜 Version History </strong>
 
+v1.0.1
+- Reorganized configuration entries to remove numbered setting names and use Configuration Manager ordering instead.
+
 v1.0.0
 - **Initial standalone release.**
 

@@ -1,6 +1,6 @@
 [size=5][b]Marsarah Build Pieces[/b][/size]
 
-[b]Version:[/b] 1.0.0
+[b]Version:[/b] 1.0.1
 [b]Author:[/b] Marsarah
 
 [line]
@@ -191,6 +191,9 @@ Thanks for checking out Marsarah Build Pieces!
 - Blaxxun-bloop - for ServerSync
 
 [size=5][b]📜 Version History[/b][/size]
+
+[size=4][b]v1.0.1[/b][/size]
+- Reorganized configuration entries to remove numbered setting names and use Configuration Manager ordering instead.
 
 [size=4][b]v1.0.0[/b][/size]
 - [b]Initial standalone release.[/b]

@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 using MarsarahBuildPieces.Managers;
 using UnityEngine;
+using System.Collections;
 
 namespace MarsarahBuildPieces.Patches.BuildPieces
 {
@@ -11,6 +12,12 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 		private static bool initialized;
 		private static GameObject SmartDropboxPrefab;
 
+		private const string HandoffRpcName = MarsarahBuildPieces.ModGUID + ".SmartDropboxHandoff";
+		internal const float HandoffTimeoutSeconds = 5f;
+
+		private static ZRoutedRpc registeredRoutedRpc;
+		private static readonly int SmartDropboxPrefabHash = "smart_dropbox".GetStableHashCode();
+
 		internal static float SearchRadius => ConfigManager.SmartDropboxRadius.Value;
 
 		[HarmonyPatch(typeof(ZNetScene), "Awake")]
@@ -18,7 +25,12 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 		{
 			static void Postfix(ZNetScene __instance)
 			{
-				if (__instance == null || initialized)
+				if (__instance == null)
+					return;
+
+				RegisterHandoffRpc();
+
+				if (initialized)
 					return;
 
 				initialized = true;
@@ -73,7 +85,11 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			static void Postfix(SmartDropboxBehavior __state)
 			{
-				__state?.LogState("Container close completed");
+				if (__state == null)
+					return;
+
+				__state.LogState("Container close completed");
+				__state.RequestServerHandoff();
 			}
 		}
 
@@ -88,7 +104,11 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			static void Postfix(SmartDropboxBehavior __state)
 			{
-				__state?.LogState("GUI hide completed");
+				if (__state == null)
+					return;
+
+				__state.LogState("GUI hide completed");
+				__state.RequestServerHandoff();
 			}
 		}
 
@@ -266,6 +286,160 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			return container.GetComponent<SmartDropboxBehavior>() ?? container.GetComponentInParent<SmartDropboxBehavior>();
 		}
+
+		private static void RegisterHandoffRpc()
+		{
+			ZRoutedRpc rpc = ZRoutedRpc.instance;
+
+			if (rpc == null || registeredRoutedRpc == rpc)
+				return;
+
+			rpc.Register<ZDOID, uint>(HandoffRpcName, RPC_RequestServerHandoff);
+
+			registeredRoutedRpc = rpc;
+
+			log.Info("Smart Dropbox handoff RPC registered.");
+		}
+
+		internal static void RequestServerHandoff(ZNetView nview)
+		{
+			if (!ConfigManager.SmartDropboxEnabled.Value)
+				return;
+
+			if (nview == null || ZNet.instance == null || ZDOMan.instance == null || ZRoutedRpc.instance == null)
+				return;
+
+			ZDO zdo = nview.GetZDO();
+			if (zdo == null)
+				return;
+
+			if (!nview.IsOwner())
+			{
+				log.Warn($"Cannot request Smart Dropbox handoff for {zdo.m_uid}: local peer is not the owner.");
+				return;
+			}
+
+			uint expectedRevision = zdo.DataRevision;
+
+			ZDOMan.instance.ForceSendZDO(zdo.m_uid);
+
+			log.Info($"Handoff requested | ZDO={zdo.m_uid} | ExpectedRevision={expectedRevision} | Owner={zdo.GetOwner()}");
+
+			ZRoutedRpc.instance.InvokeRoutedRPC(HandoffRpcName, zdo.m_uid, expectedRevision);
+		}
+
+		private static void RPC_RequestServerHandoff(long sender, ZDOID zdoId, uint expectedRevision)
+		{
+			if (ZNet.instance == null || !ZNet.instance.IsServer())
+				return;
+
+			if (ZDOMan.instance == null)
+				return;
+
+			ZDO zdo = ZDOMan.instance.GetZDO(zdoId);
+			if (zdo == null)
+			{
+				log.Info($"Handoff request rejected: ZDO {zdoId} was not found.");
+				return;
+			}
+
+			if (zdo.GetPrefab() != SmartDropboxPrefabHash)
+			{
+				log.Info($"Handoff request rejected: ZDO {zdoId} is not a Smart Dropbox.");
+				return;
+			}
+
+			long serverId = ZDOMan.GetSessionID();
+			long currentOwner = zdo.GetOwner();
+
+			if (currentOwner != sender && currentOwner != serverId)
+			{
+				log.Info($"Handoff request rejected | ZDO={zdoId} | Sender={sender} | Owner={currentOwner}");
+				return;
+			}
+
+			log.Info($"Handoff request received | Sender={sender} | ZDO={zdoId} | ServerRevision={zdo.DataRevision} | ExpectedRevision={expectedRevision} | Owner={currentOwner}");
+
+			if (zdo.DataRevision >= expectedRevision)
+			{
+				TryAcquireServerOwnership(sender, zdo, expectedRevision);
+				return;
+			}
+
+			if (ZNetScene.instance == null)
+			{
+				log.Warn($"Cannot wait for Smart Dropbox handoff: ZNetScene is unavailable for {zdoId}.");
+				return;
+			}
+
+			log.Info($"Waiting for Smart Dropbox synchronization | ZDO={zdoId} | ServerRevision={zdo.DataRevision} | ExpectedRevision={expectedRevision}");
+
+			ZNetScene.instance.StartCoroutine(WaitForServerHandoff(sender, zdoId, expectedRevision));
+		}
+
+		internal static void TryAcquireServerOwnership(long sender, ZDO zdo, uint expectedRevision)
+		{
+			if (zdo == null || ZDOMan.instance == null)
+				return;
+
+			if (zdo.DataRevision < expectedRevision)
+				return;
+
+			long serverId = ZDOMan.GetSessionID();
+			long currentOwner = zdo.GetOwner();
+
+			if (currentOwner != sender && currentOwner != serverId)
+			{
+				log.Warn($"Smart Dropbox ownership changed while waiting | ZDO={zdo.m_uid} | Sender={sender} | Owner={currentOwner}");
+				return;
+			}
+
+			if (zdo.GetInt(ZDOVars.s_inUse) == 1)
+			{
+				log.Warn($"Smart Dropbox handoff cancelled because container is in use | ZDO={zdo.m_uid}");
+				return;
+			}
+
+			if (currentOwner != serverId)
+				zdo.SetOwner(serverId);
+
+			ZDOMan.instance.ForceSendZDO(zdo.m_uid);
+
+			log.Info($"Server ownership acquired | ZDO={zdo.m_uid} | Revision={zdo.DataRevision} | ExpectedRevision={expectedRevision} | Owner={zdo.GetOwner()}");
+		}
+
+		private static IEnumerator WaitForServerHandoff(long sender, ZDOID zdoId, uint expectedRevision)
+		{
+			float startTime = Time.realtimeSinceStartup;
+
+			while (Time.realtimeSinceStartup - startTime < HandoffTimeoutSeconds)
+			{
+				if (ZDOMan.instance == null)
+					yield break;
+
+				ZDO zdo = ZDOMan.instance.GetZDO(zdoId);
+				if (zdo == null)
+				{
+					log.Warn($"Smart Dropbox disappeared while waiting for synchronization | ZDO={zdoId}");
+					yield break;
+				}
+
+				if (zdo.DataRevision >= expectedRevision)
+				{
+					log.Info($"Source synchronized | ZDO={zdoId} | Revision={zdo.DataRevision} | ExpectedRevision={expectedRevision}");
+
+					TryAcquireServerOwnership(sender, zdo, expectedRevision);
+					yield break;
+				}
+
+				yield return new WaitForSecondsRealtime(0.05f);
+			}
+
+			ZDO timedOutZdo = ZDOMan.instance?.GetZDO(zdoId);
+			uint finalRevision = timedOutZdo?.DataRevision ?? 0;
+
+			log.Warn($"Timed out waiting for Smart Dropbox synchronization | ZDO={zdoId} | ServerRevision={finalRevision} | ExpectedRevision={expectedRevision}");
+		}
 	}
 
 	internal sealed class SmartDropboxBehavior : MonoBehaviour
@@ -327,6 +501,11 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			bool inUse = container != null && container.IsInUse();
 
 			log.Info($"{stage} | Session={sessionId} | Server={isServer} | ZDO={zdo.m_uid} | Owner={zdo.GetOwner()} | LocalOwner={nview.IsOwner()} | Revision={zdo.DataRevision} | InUse={inUse} | Stacks={stackCount}");
+		}
+
+		internal void RequestServerHandoff()
+		{
+			SmartDropbox.RequestServerHandoff(nview);
 		}
 	}
 }

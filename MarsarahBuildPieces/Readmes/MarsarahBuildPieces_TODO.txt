@@ -11,9 +11,11 @@ A. Fixes
 B. Updates
 -----------------------
 - Reorganized configuration entries to remove numbered setting names and use Configuration Manager ordering instead.
+- Recolored the Mystical Light Ward icon.
 
 C. New additions
 -----------------------
+* Added smaller sign piece.
 
 
 ============================================================
@@ -25,18 +27,9 @@ A. Testing:
 B. Next Release / High Priority
 -------------------------------
 
-B. Deep North / 1.0 Content
----------------------------
-[DEFERRED] Do this after playing the Deep North to avoid spoilers.
-
 C. New Build Pieces / Features
 ------------------------------
-* Implement smaller sign board piece. (just clone the default and resize smaller and add as new piece)
+
 * Smart Dropbox:
   - Items placed inside are automatically moved to nearby containers.
   - Only move an item to a container that already contains that item/type.
-
-D. Release / Documentation
---------------------------
-* Final release packaging and documentation pass after compatibility testing.
-* Make sure the documentation clearly states that Deep North content is intentionally not included yet and will be added after the playthrough.

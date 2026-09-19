@@ -92,6 +92,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			SetupMysticalWardDefaults(MysticalWardPrefab);
 			ScaleMysticalWard(MysticalWardPrefab);
 			ApplyMysticalGlow(MysticalWardPrefab);
+			ModifyMysticalWardIcon(MysticalWardPrefab);
 
 			SetRadiusMarker(MysticalWardPrefab);
 			HideRadiusMarker(MysticalWardPrefab);
@@ -158,6 +159,76 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 		private static void ScaleMysticalWard(GameObject prefab)
 		{
 			prefab.transform.localScale = Vector3.one * 0.6f;
+		}
+
+		private static void ModifyMysticalWardIcon(GameObject prefab)
+		{
+			const float minHue = 0.11f;
+			const float maxHue = 0.21f;
+			const float minSaturation = 0.4f;
+			const float minValue = 0.5f;
+
+			Piece piece = prefab.GetComponent<Piece>();
+			if (piece == null)
+			{
+				log.Warn("Mystical Light Ward has no Piece component for icon modification.");
+				return;
+			}
+
+			Sprite originalIcon = piece.m_icon;
+			if (originalIcon == null || originalIcon.texture == null)
+			{
+				log.Warn("Mystical Light Ward original icon is null.");
+				return;
+			}
+
+			Rect atlasRect = originalIcon.textureRect;
+
+			Texture2D iconTexture = new Texture2D((int)atlasRect.width, (int)atlasRect.height, TextureFormat.RGBA32, false);
+			RenderTexture renderTexture = RenderTexture.GetTemporary(originalIcon.texture.width, originalIcon.texture.height, 0, RenderTextureFormat.ARGB32);
+			RenderTexture previousRenderTexture = RenderTexture.active;
+
+			Graphics.Blit(originalIcon.texture, renderTexture);
+			RenderTexture.active = renderTexture;
+
+			iconTexture.ReadPixels(atlasRect, 0, 0);
+			iconTexture.Apply();
+
+			RenderTexture.active = previousRenderTexture;
+			RenderTexture.ReleaseTemporary(renderTexture);
+
+			// Preserve the original texture feel instead of forcing chunky point filtering.
+			iconTexture.filterMode = originalIcon.texture.filterMode;
+			iconTexture.wrapMode = TextureWrapMode.Clamp;
+			iconTexture.anisoLevel = originalIcon.texture.anisoLevel;
+
+			Color[] pixels = iconTexture.GetPixels();
+
+			for (int i = 0; i < pixels.Length; i++)
+			{
+				Color color = pixels[i];
+				Color.RGBToHSV(color, out float hue, out float saturation, out float value);
+
+				bool isWardGlow = hue >= minHue && hue <= maxHue && saturation >= minSaturation && value >= minValue;
+				if (!isWardGlow)
+					continue;
+
+				float intensity = Mathf.InverseLerp(minValue, 1f, value);
+
+				Color darkBlue = MysticalGlowColor * 0.75f;
+				Color brightBlue = Color.Lerp(MysticalGlowColor, Color.white, 0.35f);
+				Color newColor = Color.Lerp(darkBlue, brightBlue, intensity);
+
+				newColor.a = color.a;
+				pixels[i] = newColor;
+			}
+
+			iconTexture.SetPixels(pixels);
+			iconTexture.Apply();
+
+			piece.m_icon = Sprite.Create(iconTexture, new Rect(0, 0, iconTexture.width, iconTexture.height), new Vector2(0.5f, 0.5f), originalIcon.pixelsPerUnit);
+
+			log.Info("Mystical Light Ward icon glow recolored to blue.");
 		}
 
 		public static bool ToggleVisibility()

@@ -61,30 +61,36 @@ namespace MarsarahBuildPieces.Managers
 				"Pocket Portal",
 				"Adds a new portal that is built from a Portal Core that only takes one inventory slot, which can be crafted at a Workbench starting with the Mountain biome. Can only build one Pocket Portal per player. (Toggling mid-game requires reloading the build/crafting menu)",
 				ConfigSections.BuildPieces,
-				50);
+				60);
 
 			public static readonly ConfigMetadata GlacialStonePortal = new ConfigMetadata(
 				"Glacial Stone Portal",
 				"Enables the unused stone portal and adds it to the build menu. Works like a normal portal and is not to be confused with the Stone Portal from Ashlands. Unlocked at the Mountain biome. (Toggling mid-game requires reloading the build/crafting menu)",
 				ConfigSections.BuildPieces,
-				40);
+				50);
 
 			public static readonly ConfigMetadata BuildPiecesLighting = new ConfigMetadata(
 				"Extra Lights",
 				"Adds new light sources including the Silver Sconce, Green Standing Brazier, Silver Hanging Brazier, and Colored Dverger Lanterns, unlocked at the Mountain and Mistlands biomes. (Toggling mid-game requires reloading the build/crafting menu)",
 				ConfigSections.BuildPieces,
-				30);
+				40);
 
 			public static readonly ConfigMetadata MysticalLightWard = new ConfigMetadata(
 				"Mystical Light Ward",
 				"Adds a small ward starting with the Mountain biome. When built, it keeps fueled light sources within its radius permanently lit. (Toggling mid-game requires reloading the build/crafting menu)",
 				ConfigSections.BuildPieces,
-				20);
+				30);
 
 			public static readonly ConfigMetadata MysticalLightWardRadius = new ConfigMetadata(
 				"Mystical Light Ward Radius",
 				"Sets the effect radius of the Mystical Light Ward in meters.",
 				ConfigSections.BuildPieces,
+				20);
+
+			public static readonly ConfigMetadata SmallSign = new ConfigMetadata(
+				"Small Sign", 
+				"Adds a smaller version of the wooden sign to the build menu. (Toggling mid-game requires reloading the build/crafting menu)", 
+				ConfigSections.BuildPieces, 
 				10);
 		}
 
@@ -95,6 +101,7 @@ namespace MarsarahBuildPieces.Managers
 		public static ConfigEntry<bool> BuildPiecesLightingEnabled;
 		public static ConfigEntry<bool> MysticalLightWardEnabled;
 		public static ConfigEntry<int> MysticalLightWardRadius;
+		public static ConfigEntry<bool> SmallSignEnabled;
 
 		public static void Init(ConfigFile configFile)
 		{
@@ -108,6 +115,7 @@ namespace MarsarahBuildPieces.Managers
 			BuildPiecesLightingEnabled = CreateConfig(Configs.BuildPiecesLighting, true);
 			MysticalLightWardEnabled = CreateConfig(Configs.MysticalLightWard, true);
 			MysticalLightWardRadius = CreateConfig(Configs.MysticalLightWardRadius, 32, true, new AcceptableValueRange<int>(5, 50));
+			SmallSignEnabled = CreateConfig(Configs.SmallSign, true);
 
 			SetupWatcher();
 
@@ -196,6 +204,10 @@ namespace MarsarahBuildPieces.Managers
 
 				case var name when name == Configs.MysticalLightWardRadius.Name:
 					MysticalLightWard.RefreshRadius();
+					break;
+
+				case var name when name == Configs.SmallSign.Name:
+					SmallSign.ToggleVisibility();
 					break;
 			}
 		}

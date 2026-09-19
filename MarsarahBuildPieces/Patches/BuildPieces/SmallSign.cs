@@ -6,7 +6,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 {
 	internal static class SmallSign
 	{
-		private static readonly LogManager log = new LogManager("Small Sign", LogManager.LogLevel.Info);
+		private static readonly LogManager log = new LogManager("Small Sign", LogManager.LogLevel.Warning);
 
 		private static bool initialized = false;
 		private static GameObject SmallSignPrefab;

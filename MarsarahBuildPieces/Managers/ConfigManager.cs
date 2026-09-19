@@ -57,6 +57,18 @@ namespace MarsarahBuildPieces.Managers
 				ConfigSections.Main,
 				10);
 
+			public static readonly ConfigMetadata SmartDropbox = new ConfigMetadata(
+				"Smart Dropbox",
+				"Adds a Smart Dropbox that automatically distributes deposited items to nearby storage chests that already contain the same item type after the Dropbox is closed. (Toggling mid-game requires reloading the build menu)",
+				ConfigSections.BuildPieces,
+				80);
+
+			public static readonly ConfigMetadata SmartDropboxRadius = new ConfigMetadata(
+				"Smart Dropbox Radius",
+				"Sets the storage search radius of the Smart Dropbox in meters.",
+				ConfigSections.BuildPieces,
+				70);
+
 			public static readonly ConfigMetadata PocketPortal = new ConfigMetadata(
 				"Pocket Portal",
 				"Adds a new portal that is built from a Portal Core that only takes one inventory slot, which can be crafted at a Workbench starting with the Mountain biome. Can only build one Pocket Portal per player. (Toggling mid-game requires reloading the build/crafting menu)",
@@ -96,6 +108,8 @@ namespace MarsarahBuildPieces.Managers
 
 		public static ConfigEntry<bool> ServerConfigLocked;
 
+		public static ConfigEntry<bool> SmartDropboxEnabled;
+		public static ConfigEntry<int> SmartDropboxRadius;
 		public static ConfigEntry<bool> PocketPortalEnabled;
 		public static ConfigEntry<bool> GlacialStonePortalEnabled;
 		public static ConfigEntry<bool> BuildPiecesLightingEnabled;
@@ -110,6 +124,8 @@ namespace MarsarahBuildPieces.Managers
 			ServerConfigLocked = CreateConfig(Configs.ServerConfig, true);
 			_ = configSync.AddLockingConfigEntry(ServerConfigLocked);
 
+			SmartDropboxEnabled = CreateConfig(Configs.SmartDropbox, true);
+			SmartDropboxRadius = CreateConfig(Configs.SmartDropboxRadius, 20, true, new AcceptableValueRange<int>(5, 50));
 			PocketPortalEnabled = CreateConfig(Configs.PocketPortal, true);
 			GlacialStonePortalEnabled = CreateConfig(Configs.GlacialStonePortal, true);
 			BuildPiecesLightingEnabled = CreateConfig(Configs.BuildPiecesLighting, true);
@@ -182,6 +198,14 @@ namespace MarsarahBuildPieces.Managers
 
 			switch (configName)
 			{
+				case var name when name == Configs.SmartDropbox.Name:
+					SmartDropbox.ToggleVisibility();
+					break;
+
+				case var name when name == Configs.SmartDropboxRadius.Name:
+					SmartDropbox.RefreshRadius();
+					break;
+
 				case var name when name == Configs.PocketPortal.Name:
 					PocketPortal.TogglePocketPortalVisibility();
 					PocketPortal.TogglePortalCoreVisibility();

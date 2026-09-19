@@ -33,3 +33,4 @@ C. New Build Pieces / Features
 * Smart Dropbox:
   - Items placed inside are automatically moved to nearby containers.
   - Only move an item to a container that already contains that item/type.
+  - When the config is OFF but a Smart Dropbox already exists in world, disable its functionality and make a visual change + hover text.

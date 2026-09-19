@@ -17,6 +17,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			{
 				bool toggled = true;
 
+				toggled &= SmartDropbox.ToggleVisibility();
 				toggled &= PocketPortal.TogglePocketPortalVisibility();
 				toggled &= GlacialStonePortal.TogglePortalVisibility();
 				toggled &= MysticalLightWard.ToggleVisibility();

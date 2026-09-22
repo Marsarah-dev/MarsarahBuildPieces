@@ -326,6 +326,13 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			long playerId = Game.instance?.GetPlayerProfile()?.GetPlayerID() ?? 0L;
 
 			ZDOMan.instance.ForceSendZDO(zdo.m_uid);
+
+			if (ZNet.instance.IsServer())
+			{
+				TryAcquireServerOwnership(ZDOMan.GetSessionID(), zdo, expectedRevision, playerId);
+				return;
+			}
+
 			ZRoutedRpc.instance.InvokeRoutedRPC(HandoffRpcName, zdo.m_uid, expectedRevision, playerId);
 		}
 
@@ -691,6 +698,23 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 				if (DestinationUsesWardCheck(destination))
 				{
+					long serverId = ZDOMan.GetSessionID();
+
+					if (ZNet.instance != null && ZNet.instance.IsServer() && transaction.DepositingPeer == serverId)
+					{
+						bool allowed = PrivateArea.CheckAccess(destination.GetPosition(), 0f, flash: false);
+
+						if (!allowed)
+						{
+							log.Info($"Destination skipped: ward denied access | Destination={destination.m_uid} | PlayerID={transaction.PlayerId}");
+							transaction.Index++;
+							continue;
+						}
+
+						RequestDestinationHandoff(source, destination);
+						return;
+					}
+
 					ZRoutedRpc.instance.InvokeRoutedRPC(transaction.DepositingPeer, DestinationAccessRequestRpcName, sourceId, destination.m_uid, transaction.PlayerId);
 					return;
 				}
@@ -1060,47 +1084,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				child.gameObject.SetActive(false);
 		}
 
-		private static void ApplySmartDropboxMaterial(GameObject prefab)
-		{
-			if (prefab == null)
-				return;
-
-			foreach (Renderer renderer in prefab.GetComponentsInChildren<Renderer>(true))
-			{
-				Material[] materials = renderer.sharedMaterials;
-				bool changed = false;
-
-				for (int i = 0; i < materials.Length; i++)
-				{
-					Material material = materials[i];
-					if (material == null || !material.name.StartsWith("ironchest"))
-						continue;
-
-					Material smartMaterial = new Material(material)
-					{
-						name = "SmartDropbox_IronChest"
-					};
-
-					if (smartMaterial.HasProperty("_Color"))
-						smartMaterial.SetColor("_Color", Color.white);
-
-					if (smartMaterial.HasProperty("_Metallic"))
-						smartMaterial.SetFloat("_Metallic", 0.9f);
-
-					if (smartMaterial.HasProperty("_Glossiness"))
-						smartMaterial.SetFloat("_Glossiness", 0.55f);
-
-					materials[i] = smartMaterial;
-					changed = true;
-				}
-
-				if (changed)
-					renderer.sharedMaterials = materials;
-			}
-
-			log.Info("Applied Smart Dropbox material.");
-		}
-
 		private static void ApplySmartDropboxMaterial(GameObject prefab, string sourcePrefabName, string sourceMaterialName)
 		{
 			if (prefab == null)
@@ -1136,6 +1119,11 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				return;
 			}
 
+			Material smartMaterial = new Material(sourceMaterial)
+			{
+				name = "SmartDropbox_Material"
+			};
+
 			foreach (Renderer renderer in prefab.GetComponentsInChildren<Renderer>(true))
 			{
 				Material[] materials = renderer.sharedMaterials;
@@ -1146,19 +1134,13 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 					if (materials[i] == null || !materials[i].name.StartsWith("ironchest"))
 						continue;
 
-					materials[i] = new Material(sourceMaterial)
-					{
-						name = "SmartDropbox_Material"
-					};
-
+					materials[i] = smartMaterial;
 					changed = true;
 				}
 
 				if (changed)
 					renderer.sharedMaterials = materials;
 			}
-
-			log.Info($"Applied '{sourceMaterialName}' to Smart Dropbox.");
 		}
 
 		private static void SetVisualState(GameObject dropbox, bool enabled)

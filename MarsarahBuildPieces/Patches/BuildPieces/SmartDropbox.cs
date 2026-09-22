@@ -1,7 +1,9 @@
 ﻿using HarmonyLib;
 using MarsarahBuildPieces.Managers;
-using UnityEngine;
+using System;
 using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 
 namespace MarsarahBuildPieces.Patches.BuildPieces
 {
@@ -207,7 +209,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				return;
 			}
 
-			GameObject marker = Object.Instantiate(sourceProjector.gameObject, prefab.transform);
+			GameObject marker = UnityEngine.Object.Instantiate(sourceProjector.gameObject, prefab.transform);
 			marker.name = "AreaMarker";
 			marker.transform.localPosition = new Vector3(0f, 0.05f, 0f);
 			marker.transform.localRotation = Quaternion.identity;
@@ -390,22 +392,27 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			if (currentOwner != sender && currentOwner != serverId)
 			{
-				log.Warn($"Smart Dropbox ownership changed while waiting | ZDO={zdo.m_uid} | Sender={sender} | Owner={currentOwner}");
+				log.Info($"Smart Dropbox ownership changed while waiting | ZDO={zdo.m_uid} | Sender={sender} | Owner={currentOwner}");
 				return;
 			}
 
 			if (zdo.GetInt(ZDOVars.s_inUse) == 1)
 			{
-				log.Warn($"Smart Dropbox handoff cancelled because container is in use | ZDO={zdo.m_uid}");
+				log.Info($"Smart Dropbox handoff cancelled because container is in use | ZDO={zdo.m_uid}");
 				return;
 			}
 
 			if (currentOwner != serverId)
 				zdo.SetOwner(serverId);
 
+			string itemData = zdo.GetString(ZDOVars.s_items);
+			log.Info($"(Try Acquire Server Ownership) Source synchronized | ZDO={zdo.m_uid} | Revision={zdo.DataRevision} | ExpectedRevision={expectedRevision} | ItemDataLength={itemData?.Length ?? 0}");
+
 			ZDOMan.instance.ForceSendZDO(zdo.m_uid);
 
 			log.Info($"Server ownership acquired | ZDO={zdo.m_uid} | Revision={zdo.DataRevision} | ExpectedRevision={expectedRevision} | Owner={zdo.GetOwner()}");
+
+			LogServerSourceInventory(zdo);
 		}
 
 		private static IEnumerator WaitForServerHandoff(long sender, ZDOID zdoId, uint expectedRevision)
@@ -426,7 +433,9 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 				if (zdo.DataRevision >= expectedRevision)
 				{
-					log.Info($"Source synchronized | ZDO={zdoId} | Revision={zdo.DataRevision} | ExpectedRevision={expectedRevision}");
+					string itemData = zdo.GetString(ZDOVars.s_items);
+
+					log.Info($"(WaitForSeverHandoff) Source synchronized | ZDO={zdoId} | Revision={zdo.DataRevision} | ExpectedRevision={expectedRevision} | ItemDataLength={itemData?.Length ?? 0}");
 
 					TryAcquireServerOwnership(sender, zdo, expectedRevision);
 					yield break;
@@ -439,6 +448,66 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			uint finalRevision = timedOutZdo?.DataRevision ?? 0;
 
 			log.Warn($"Timed out waiting for Smart Dropbox synchronization | ZDO={zdoId} | ServerRevision={finalRevision} | ExpectedRevision={expectedRevision}");
+		}
+
+		private static void LogServerSourceInventory(ZDO zdo)
+		{
+			if (zdo == null || ZNet.instance == null || !ZNet.instance.IsServer())
+				return;
+
+			if (ObjectDB.instance == null)
+			{
+				log.Warn($"Cannot read Smart Dropbox inventory: ObjectDB is unavailable | ZDO={zdo.m_uid}");
+				return;
+			}
+
+			if (SmartDropboxPrefab == null)
+			{
+				log.Warn($"Cannot read Smart Dropbox inventory: prefab is unavailable | ZDO={zdo.m_uid}");
+				return;
+			}
+
+			Container prefabContainer = SmartDropboxPrefab.GetComponent<Container>();
+			if (prefabContainer == null)
+			{
+				log.Warn($"Cannot read Smart Dropbox inventory: prefab Container is unavailable | ZDO={zdo.m_uid}");
+				return;
+			}
+
+			string data = zdo.GetString(ZDOVars.s_items);
+
+			if (string.IsNullOrEmpty(data))
+			{
+				log.Info($"Source inventory read | ZDO={zdo.m_uid} | Stacks=0");
+				return;
+			}
+
+			try
+			{
+				Inventory temporaryInventory = new Inventory(
+					"Smart Dropbox Server Read",
+					prefabContainer.m_bkg,
+					prefabContainer.m_width,
+					prefabContainer.m_height);
+
+				ZPackage package = new ZPackage(data);
+				temporaryInventory.Load(package);
+
+				List<ItemDrop.ItemData> items = temporaryInventory.GetAllItems();
+
+				log.Info($"Source inventory read | ZDO={zdo.m_uid} | Revision={zdo.DataRevision} | Stacks={items.Count} | Size={prefabContainer.m_width}x{prefabContainer.m_height}");
+
+				foreach (ItemDrop.ItemData item in items)
+				{
+					string itemName = item.m_dropPrefab != null ? item.m_dropPrefab.name : item.m_shared.m_name;
+
+					log.Info($"Source stack | Item={itemName} | Amount={item.m_stack} | Grid={item.m_gridPos.x},{item.m_gridPos.y}");
+				}
+			}
+			catch (Exception ex)
+			{
+				log.Error($"Failed to read Smart Dropbox source inventory | ZDO={zdo.m_uid} | {ex}");
+			}
 		}
 	}
 
@@ -499,8 +568,10 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			bool isServer = ZNet.instance != null && ZNet.instance.IsServer();
 			int stackCount = container?.GetInventory()?.NrOfItems() ?? -1;
 			bool inUse = container != null && container.IsInUse();
+			string itemData = zdo.GetString(ZDOVars.s_items);
+			int itemDataLength = itemData?.Length ?? 0;
 
-			log.Info($"{stage} | Session={sessionId} | Server={isServer} | ZDO={zdo.m_uid} | Owner={zdo.GetOwner()} | LocalOwner={nview.IsOwner()} | Revision={zdo.DataRevision} | InUse={inUse} | Stacks={stackCount}");
+			log.Info($"{stage} | Session={sessionId} | Server={isServer} | ZDO={zdo.m_uid} | Owner={zdo.GetOwner()} | LocalOwner={nview.IsOwner()} | Revision={zdo.DataRevision} | InUse={inUse} | Stacks={stackCount} | ItemDataLength={itemDataLength}");
 		}
 
 		internal void RequestServerHandoff()

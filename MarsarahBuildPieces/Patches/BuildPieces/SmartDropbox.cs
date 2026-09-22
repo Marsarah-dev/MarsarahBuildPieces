@@ -422,6 +422,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			LogServerSourceInventory(zdo);
 			LogDestinationCandidates(zdo);
+			LogDestinationMatches(zdo);
 		}
 
 		private static IEnumerator WaitForServerHandoff(long sender, ZDOID zdoId, uint expectedRevision)
@@ -596,6 +597,107 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				bool inUse = candidate.GetInt(ZDOVars.s_inUse) == 1;
 
 				log.Info($"Destination candidate | ZDO={candidate.m_uid} | Prefab={prefabName} | Distance={distance:0.0}m | Owner={candidate.GetOwner()} | InUse={inUse} | ItemDataLength={itemData?.Length ?? 0}");
+			}
+		}
+
+		private static bool TryReadInventory(ZDO zdo, out Inventory inventory)
+		{
+			inventory = null;
+
+			if (zdo == null || ZNetScene.instance == null || ObjectDB.instance == null)
+				return false;
+
+			GameObject prefab = ZNetScene.instance.GetPrefab(zdo.GetPrefab());
+			if (prefab == null)
+				return false;
+
+			Container prefabContainer = prefab.GetComponent<Container>();
+			if (prefabContainer == null)
+				return false;
+
+			inventory = new Inventory("Smart Dropbox Server Read", prefabContainer.m_bkg, prefabContainer.m_width, prefabContainer.m_height);
+
+			byte[] data = zdo.GetByteArray(ZDOVars.s_items);
+
+			if (data == null || data.Length == 0)
+				return true;
+
+			try
+			{
+				inventory.Load(new ZPackage(data));
+				return true;
+			}
+			catch (Exception ex)
+			{
+				log.Error($"Failed to read container inventory | ZDO={zdo.m_uid} | Prefab={prefab.name} | {ex}");
+				inventory = null;
+				return false;
+			}
+		}
+
+		private static bool IsSameItemType(ItemDrop.ItemData sourceItem, ItemDrop.ItemData destinationItem)
+		{
+			if (sourceItem == null || destinationItem == null)
+				return false;
+
+			if (sourceItem.m_dropPrefab != null && destinationItem.m_dropPrefab != null)
+				return sourceItem.m_dropPrefab.name == destinationItem.m_dropPrefab.name;
+
+			return sourceItem.m_shared.m_name == destinationItem.m_shared.m_name;
+		}
+
+		private static void LogDestinationMatches(ZDO source)
+		{
+			if (!TryReadInventory(source, out Inventory sourceInventory))
+			{
+				log.Warn($"Could not read Smart Dropbox inventory for item matching | ZDO={source.m_uid}");
+				return;
+			}
+
+			List<ItemDrop.ItemData> sourceItems = sourceInventory.GetAllItems();
+			List<ZDO> candidates = FindDestinationCandidates(source);
+
+			if (sourceItems.Count == 0)
+			{
+				log.Info($"Item matching skipped: Smart Dropbox is empty | ZDO={source.m_uid}");
+				return;
+			}
+
+			foreach (ItemDrop.ItemData sourceItem in sourceItems)
+			{
+				string itemName = sourceItem.m_dropPrefab != null ? sourceItem.m_dropPrefab.name : sourceItem.m_shared.m_name;
+				int matchingDestinations = 0;
+
+				foreach (ZDO candidate in candidates)
+				{
+					if (!TryReadInventory(candidate, out Inventory destinationInventory))
+						continue;
+
+					int matchingStacks = 0;
+					int existingAmount = 0;
+
+					foreach (ItemDrop.ItemData destinationItem in destinationInventory.GetAllItems())
+					{
+						if (!IsSameItemType(sourceItem, destinationItem))
+							continue;
+
+						matchingStacks++;
+						existingAmount += destinationItem.m_stack;
+					}
+
+					if (matchingStacks == 0)
+						continue;
+
+					matchingDestinations++;
+
+					GameObject prefab = ZNetScene.instance.GetPrefab(candidate.GetPrefab());
+					string prefabName = prefab != null ? prefab.name : candidate.GetPrefab().ToString();
+					float distance = Vector3.Distance(source.GetPosition(), candidate.GetPosition());
+
+					log.Info($"Item match | Item={itemName} | Destination={candidate.m_uid} | Prefab={prefabName} | Distance={distance:0.0}m | MatchingStacks={matchingStacks} | ExistingAmount={existingAmount}");
+				}
+
+				log.Info($"Item match summary | Item={itemName} | SourceAmount={sourceItem.m_stack} | MatchingDestinations={matchingDestinations}");
 			}
 		}
 	}

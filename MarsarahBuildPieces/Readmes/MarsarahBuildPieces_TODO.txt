@@ -16,6 +16,9 @@ B. Updates
 C. New additions
 -----------------------
 * Added smaller sign piece.
+* Smart Dropbox
+  - Added a new configurable storage piece that automatically distributes deposited items to nearby supported chests that already contain the same item type. 
+  - Includes synced search radius, nearest-first sorting, ward/access checks, multiplayer/dedicated-server support, local-world support, overflow handling, custom particles/material, and a config toggle that disables sorting while leaving placed Dropboxes usable as normal storage.
 
 
 ============================================================

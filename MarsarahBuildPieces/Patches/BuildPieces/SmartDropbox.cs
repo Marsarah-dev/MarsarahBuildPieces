@@ -288,14 +288,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			if (rpc == null || registeredRoutedRpc == rpc)
 				return;
 
-			/*rpc.Register<ZDOID, uint, long>(HandoffRpcName, RPC_RequestServerHandoff);
-
-			rpc.Register<ZDOID, ZDOID, long>(DestinationHandoffRequestRpcName, RPC_RequestDestinationHandoff);
-			rpc.Register<ZDOID, ZDOID, uint, long>(DestinationHandoffResponseRpcName, RPC_DestinationHandoffResponse);
-
-			rpc.Register<ZDOID, ZDOID, long>(DestinationAccessRequestRpcName, RPC_RequestDestinationAccess);
-			rpc.Register<ZDOID, ZDOID, bool, long>(DestinationAccessResponseRpcName, RPC_DestinationAccessResponse);*/
-
 			rpc.Register<ZDOID, uint, long>(HandoffRpcName, RPC_RequestServerHandoff);
 
 			rpc.Register<ZDOID, ZDOID>(DestinationHandoffRequestRpcName, RPC_RequestDestinationHandoff);
@@ -787,14 +779,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 					return;
 				}
 
-				/*if (!CheckDestinationPrivacy(destination, transaction.PlayerId))
-				{
-					log.Info($"Destination skipped: player lacks container access | Destination={destination.m_uid} | PlayerID={transaction.PlayerId}");
-					transaction.Index++;
-					continue;
-				}*/
-
-				RequestDestinationHandoff(source, destination, transaction.PlayerId);
+				RequestDestinationHandoff(source, destination);
 				return;
 			}
 
@@ -1002,16 +987,9 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				return;
 			}
 
-			/*if (!CheckDestinationPrivacy(destination, playerId))
-			{
-				log.Info($"Destination skipped: container privacy changed during access check | Destination={destinationId} | PlayerID={playerId}");
-				AdvanceDistribution(sourceId);
-				return;
-			}*/
-
 			log.Info($"Destination access granted | Destination={destinationId} | PlayerID={playerId}");
 
-			RequestDestinationHandoff(source, destination, playerId);
+			RequestDestinationHandoff(source, destination);
 		}
 
 		private static IEnumerator WaitForDestinationHandoff(ZDOID sourceId, ZDOID destinationId, long expectedOwner, uint expectedRevision)
@@ -1066,13 +1044,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				AdvanceDistribution(sourceId);
 				return;
 			}
-
-			/*if (!CheckDestinationPrivacy(destination, playerId))
-			{
-				log.Info($"Destination acquisition cancelled because access changed | Destination={destination.m_uid} | PlayerID={playerId}");
-				AdvanceDistribution(sourceId);
-				return;
-			}*/
 
 			if (destination.GetInt(ZDOVars.s_inUse) == 1)
 			{
@@ -1140,31 +1111,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			return false;
 		}
-
-		/*private static bool CheckDestinationPrivacy(ZDO destination, long playerId)
-		{
-			if (destination == null || ZNetScene.instance == null)
-				return false;
-
-			GameObject prefab = ZNetScene.instance.GetPrefab(destination.GetPrefab());
-			Container container = prefab?.GetComponent<Container>();
-
-			if (container == null)
-				return false;
-
-			switch (container.m_privacy)
-			{
-				case Container.PrivacySetting.Public:
-					return true;
-
-				case Container.PrivacySetting.Private:
-					return destination.GetLong(ZDOVars.s_creator, 0L) == playerId;
-
-				case Container.PrivacySetting.Group:
-				default:
-					return false;
-			}
-		}*/
 
 		/*private static void LogServerSourceInventory(ZDO zdo)
 		{

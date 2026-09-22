@@ -154,13 +154,13 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 		private static void SetupSmartDropboxDefaults(GameObject prefab)
 		{
 			ZNetView znet = prefab.GetComponent<ZNetView>();
-			if (znet != null)
+			/*if (znet != null)
 			{
 				znet.m_persistent = true;
 				znet.m_distant = false;
 				znet.m_type = ZDO.ObjectType.Default;
 				znet.m_syncInitialScale = true;
-			}
+			}*/
 
 			Piece piece = prefab.GetComponent<Piece>();
 			if (piece == null)
@@ -405,12 +405,12 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			if (currentOwner != serverId)
 				zdo.SetOwner(serverId);
 
-			string itemData = zdo.GetString(ZDOVars.s_items);
+			byte[] itemData = zdo.GetByteArray(ZDOVars.s_items);
 			log.Info($"(Try Acquire Server Ownership) Source synchronized | ZDO={zdo.m_uid} | Revision={zdo.DataRevision} | ExpectedRevision={expectedRevision} | ItemDataLength={itemData?.Length ?? 0}");
 
 			ZDOMan.instance.ForceSendZDO(zdo.m_uid);
 
-			log.Info($"Server ownership acquired | ZDO={zdo.m_uid} | Revision={zdo.DataRevision} | ExpectedRevision={expectedRevision} | Owner={zdo.GetOwner()}");
+			log.Info($"Server ownership acquired | ZDO={zdo.m_uid} | Persistent={zdo.Persistent} | Revision={zdo.DataRevision} | ExpectedRevision={expectedRevision} | Owner={zdo.GetOwner()}");
 
 			LogServerSourceInventory(zdo);
 		}
@@ -433,9 +433,9 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 				if (zdo.DataRevision >= expectedRevision)
 				{
-					string itemData = zdo.GetString(ZDOVars.s_items);
+					byte[] itemData = zdo.GetByteArray(ZDOVars.s_items);
 
-					log.Info($"(WaitForSeverHandoff) Source synchronized | ZDO={zdoId} | Revision={zdo.DataRevision} | ExpectedRevision={expectedRevision} | ItemDataLength={itemData?.Length ?? 0}");
+					log.Info($"(WaitForServerHandoff) Source synchronized | ZDO={zdoId} | Revision={zdo.DataRevision} | ExpectedRevision={expectedRevision} | ItemDataLength={itemData?.Length ?? 0}");
 
 					TryAcquireServerOwnership(sender, zdo, expectedRevision);
 					yield break;
@@ -474,9 +474,9 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				return;
 			}
 
-			string data = zdo.GetString(ZDOVars.s_items);
+			byte[] data = zdo.GetByteArray(ZDOVars.s_items);
 
-			if (string.IsNullOrEmpty(data))
+			if (data == null || data.Length == 0)
 			{
 				log.Info($"Source inventory read | ZDO={zdo.m_uid} | Stacks=0");
 				return;
@@ -509,6 +509,17 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				log.Error($"Failed to read Smart Dropbox source inventory | ZDO={zdo.m_uid} | {ex}");
 			}
 		}
+
+		internal static ZNetView GetContainerZNetView(Container container)
+		{
+			if (container == null)
+				return null;
+
+			if (container.m_rootObjectOverride != null)
+				return container.m_rootObjectOverride.GetComponent<ZNetView>();
+
+			return container.GetComponent<ZNetView>();
+		}
 	}
 
 	internal sealed class SmartDropboxBehavior : MonoBehaviour
@@ -521,8 +532,8 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 		private void Start()
 		{
-			nview = GetComponent<ZNetView>();
 			container = GetComponent<Container>();
+			nview = SmartDropbox.GetContainerZNetView(container);
 
 			if (nview == null || container == null || nview.GetZDO() == null)
 				return;
@@ -533,6 +544,14 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				inventory.m_onChanged += OnInventoryChanged;
 
 			SmartDropbox.HideRadiusMarker(gameObject);
+
+			ZNetView localView = GetComponent<ZNetView>();
+			ZNetView containerView = SmartDropbox.GetContainerZNetView(container);
+
+			string localZdo = localView?.GetZDO()?.m_uid.ToString() ?? "none";
+			string containerZdo = containerView?.GetZDO()?.m_uid.ToString() ?? "none";
+
+			log.Info($"ZNetView binding | RootOverride={container.m_rootObjectOverride != null} | LocalZDO={localZdo} | ContainerZDO={containerZdo}");
 
 			LogState("Started");
 		}
@@ -550,11 +569,11 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 		internal void LogState(string stage)
 		{
-			if (nview == null)
-				nview = GetComponent<ZNetView>();
-
 			if (container == null)
 				container = GetComponent<Container>();
+
+			if (nview == null)
+				nview = SmartDropbox.GetContainerZNetView(container);
 
 			if (nview == null || nview.GetZDO() == null)
 			{
@@ -568,10 +587,10 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			bool isServer = ZNet.instance != null && ZNet.instance.IsServer();
 			int stackCount = container?.GetInventory()?.NrOfItems() ?? -1;
 			bool inUse = container != null && container.IsInUse();
-			string itemData = zdo.GetString(ZDOVars.s_items);
+			byte[] itemData = zdo.GetByteArray(ZDOVars.s_items);
 			int itemDataLength = itemData?.Length ?? 0;
 
-			log.Info($"{stage} | Session={sessionId} | Server={isServer} | ZDO={zdo.m_uid} | Owner={zdo.GetOwner()} | LocalOwner={nview.IsOwner()} | Revision={zdo.DataRevision} | InUse={inUse} | Stacks={stackCount} | ItemDataLength={itemDataLength}");
+			log.Info($"{stage} | Session={sessionId} | Server={isServer} | ZDO={zdo.m_uid} | Owner={zdo.GetOwner()} | LocalOwner={nview.IsOwner()} | Persistent={zdo.Persistent} | Revision={zdo.DataRevision} | InUse={inUse} | Stacks={stackCount} | ItemDataLength={itemDataLength}");
 		}
 
 		internal void RequestServerHandoff()

@@ -15,6 +15,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 		private static GameObject SmartDropboxPrefab;
 
 		private const string HandoffRpcName = MarsarahBuildPieces.ModGUID + ".SmartDropboxHandoff";
+		private static readonly HashSet<SmartDropboxBehavior> activeDropboxes = new HashSet<SmartDropboxBehavior>();
 		private const string DestinationHandoffRequestRpcName = MarsarahBuildPieces.ModGUID + ".SmartDropboxDestinationHandoffRequest";
 		private const string DestinationHandoffResponseRpcName = MarsarahBuildPieces.ModGUID + ".SmartDropboxDestinationHandoffResponse";
 		private const string DestinationAccessRequestRpcName = MarsarahBuildPieces.ModGUID + ".SmartDropboxDestinationAccessRequest";
@@ -47,7 +48,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 		internal static float SearchRadius => ConfigManager.SmartDropboxRadius.Value;
 
 		[HarmonyPatch(typeof(ZNetScene), "Awake")]
-		public static class ZNetScene_Awake_Patch
+		private static class ZNetScene_Awake_Patch
 		{
 			static void Postfix(ZNetScene __instance)
 			{
@@ -83,7 +84,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			static void Prefix(Container ___m_currentContainer, out SmartDropboxBehavior __state)
 			{
 				__state = GetBehavior(___m_currentContainer);
-				//__state?.LogState("Container close started");
 			}
 
 			static void Postfix(SmartDropboxBehavior __state)
@@ -91,7 +91,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				if (__state == null)
 					return;
 
-				//__state.LogState("Container close completed");
 				__state.RequestServerHandoff();
 			}
 		}
@@ -102,7 +101,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			static void Prefix(Container ___m_currentContainer, out SmartDropboxBehavior __state)
 			{
 				__state = GetBehavior(___m_currentContainer);
-				//__state?.LogState("GUI hide started");
 			}
 
 			static void Postfix(SmartDropboxBehavior __state)
@@ -110,7 +108,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				if (__state == null)
 					return;
 
-				//__state.LogState("GUI hide completed");
 				__state.RequestServerHandoff();
 			}
 		}
@@ -129,6 +126,8 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			SetupSmartDropboxDefaults(SmartDropboxPrefab);
 			AddRadiusMarker(SmartDropboxPrefab);
+			AddSmartDropboxEffect(SmartDropboxPrefab);
+			ApplySmartDropboxMaterial(SmartDropboxPrefab, "piece_chest_barrel", "barrelplayer_mat");
 
 			if (SmartDropboxPrefab.GetComponent<SmartDropboxBehavior>() == null)
 				SmartDropboxPrefab.AddComponent<SmartDropboxBehavior>();
@@ -207,8 +206,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			marker.transform.localRotation = Quaternion.identity;
 			marker.transform.localScale = Vector3.one;
 			marker.SetActive(false);
-
-			//log.Info("Added radius marker to Smart Dropbox.");
 		}
 
 		private static void SetRadiusMarker(GameObject prefab)
@@ -270,6 +267,14 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 		{
 			bool enabled = ConfigManager.SmartDropboxEnabled.Value;
 
+			SetVisualState(SmartDropboxPrefab, enabled);
+
+			foreach (SmartDropboxBehavior dropbox in activeDropboxes)
+			{
+				if (dropbox != null)
+					SetVisualState(dropbox.gameObject, enabled);
+			}
+
 			return BuildPieceController.TogglePiece(SmartDropboxPrefab?.GetComponent<Piece>(), enabled, log);
 		}
 
@@ -297,8 +302,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			rpc.Register<ZDOID, ZDOID, bool, long>(DestinationAccessResponseRpcName, RPC_DestinationAccessResponse);
 
 			registeredRoutedRpc = rpc;
-
-			//log.Info("Smart Dropbox handoff RPC registered.");
 		}
 
 		internal static void RequestServerHandoff(ZNetView nview)
@@ -324,8 +327,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			ZDOMan.instance.ForceSendZDO(zdo.m_uid);
 			ZRoutedRpc.instance.InvokeRoutedRPC(HandoffRpcName, zdo.m_uid, expectedRevision, playerId);
-
-			//log.Info($"Handoff requested | ZDO={zdo.m_uid} | ExpectedRevision={expectedRevision} | Owner={zdo.GetOwner()}");
 		}
 
 		private static void RPC_RequestServerHandoff(long sender, ZDOID zdoId, uint expectedRevision, long playerId)
@@ -358,8 +359,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				return;
 			}
 
-			log.Info($"Handoff request received | Sender={sender} | ZDO={zdoId} | ServerRevision={zdo.DataRevision} | ExpectedRevision={expectedRevision} | Owner={currentOwner}");
-
 			if (zdo.DataRevision >= expectedRevision)
 			{
 				TryAcquireServerOwnership(sender, zdo, expectedRevision, playerId);
@@ -371,8 +370,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				log.Warn($"Cannot wait for Smart Dropbox handoff: ZNetScene is unavailable for {zdoId}.");
 				return;
 			}
-
-			log.Info($"Waiting for Smart Dropbox synchronization | ZDO={zdoId} | ServerRevision={zdo.DataRevision} | ExpectedRevision={expectedRevision}");
 
 			ZNetScene.instance.StartCoroutine(WaitForServerHandoff(sender, zdoId, expectedRevision, playerId));
 		}
@@ -403,16 +400,8 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			if (currentOwner != serverId)
 				zdo.SetOwner(serverId);
 
-			/*byte[] itemData = zdo.GetByteArray(ZDOVars.s_items);
-			log.Info($"(Try Acquire Server Ownership) Source synchronized | ZDO={zdo.m_uid} | Revision={zdo.DataRevision} | ExpectedRevision={expectedRevision} | ItemDataLength={itemData?.Length ?? 0}");*/
-
 			ZDOMan.instance.ForceSendZDO(zdo.m_uid);
 
-			log.Info($"Server ownership acquired | ZDO={zdo.m_uid} | Persistent={zdo.Persistent} | Revision={zdo.DataRevision} | ExpectedRevision={expectedRevision} | Owner={zdo.GetOwner()}");
-			
-			//LogServerSourceInventory(zdo);
-			//LogDestinationCandidates(zdo);
-			//LogDestinationMatches(zdo);
 			StartDistributionTransaction(zdo, sender, playerId);
 		}
 
@@ -434,10 +423,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 				if (zdo.DataRevision >= expectedRevision)
 				{
-					byte[] itemData = zdo.GetByteArray(ZDOVars.s_items);
-
-					log.Info($"(WaitForServerHandoff) Source synchronized | ZDO={zdoId} | Revision={zdo.DataRevision} | ExpectedRevision={expectedRevision} | ItemDataLength={itemData?.Length ?? 0}");
-
 					TryAcquireServerOwnership(sender, zdo, expectedRevision, playerId);
 					yield break;
 				}
@@ -547,37 +532,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			}
 		}
 
-		/* static int MoveMatchingItems(Inventory sourceInventory, Inventory destinationInventory, ZDOID destinationId)
-		{
-			int totalMoved = 0;
-			List<ItemDrop.ItemData> sourceItems = new List<ItemDrop.ItemData>(sourceInventory.GetAllItems());
-
-			foreach (ItemDrop.ItemData sourceItem in sourceItems)
-			{
-				if (!destinationInventory.ContainsItemByName(sourceItem.m_shared.m_name))
-					continue;
-
-				int amountBefore = sourceItem.m_stack;
-				bool fullyAdded = destinationInventory.AddItem(sourceItem);
-
-				int moved = fullyAdded ? amountBefore : amountBefore - sourceItem.m_stack;
-
-				if (fullyAdded)
-					sourceInventory.RemoveItem(sourceItem);
-
-				if (moved <= 0)
-					continue;
-
-				totalMoved += moved;
-
-				string itemName = sourceItem.m_dropPrefab != null ? sourceItem.m_dropPrefab.name : sourceItem.m_shared.m_name;
-
-				log.Info($"Item transferred | Item={itemName} | Amount={moved} | Destination={destinationId}");
-			}
-
-			return totalMoved;
-		}*/
-
 		private static int MoveMatchingItems(Inventory sourceInventory, Inventory destinationInventory)
 		{
 			int totalMoved = 0;
@@ -624,7 +578,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			if (!TryReadInventory(destination, out Inventory destinationInventory))
 				return 0;
 
-			//int moved = MoveMatchingItems(sourceInventory, destinationInventory, destination.m_uid);
 			int moved = MoveMatchingItems(sourceInventory, destinationInventory);
 
 			if (moved <= 0)
@@ -644,8 +597,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				ZDOMan.instance.ForceSendZDO(source.m_uid);
 				ZDOMan.instance.ForceSendZDO(destination.m_uid);
 
-				log.Info($"Inventory transfer saved | Source={source.m_uid} | Destination={destination.m_uid} | Moved={moved}");
-
 				return moved;
 			}
 			catch (Exception ex)
@@ -654,17 +605,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				return 0;
 			}
 		}
-
-		/*private static bool IsSameItemType(ItemDrop.ItemData sourceItem, ItemDrop.ItemData destinationItem)
-		{
-			if (sourceItem == null || destinationItem == null)
-				return false;
-
-			if (sourceItem.m_dropPrefab != null && destinationItem.m_dropPrefab != null)
-				return sourceItem.m_dropPrefab.name == destinationItem.m_dropPrefab.name;
-
-			return sourceItem.m_shared.m_name == destinationItem.m_shared.m_name;
-		}*/
 
 		private static List<ZDO> FindMatchingDestinations(ZDO source)
 		{
@@ -688,26 +628,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 					result.Add(candidate);
 					break;
 				}
-
-				/*bool hasMatch = false;
-
-				foreach (ItemDrop.ItemData sourceItem in sourceItems)
-				{
-					foreach (ItemDrop.ItemData destinationItem in destinationInventory.GetAllItems())
-					{
-						if (!IsSameItemType(sourceItem, destinationItem))
-							continue;
-
-						hasMatch = true;
-						break;
-					}
-
-					if (hasMatch)
-						break;
-				}
-
-				if (hasMatch)
-					result.Add(candidate);*/
 			}
 
 			return result;
@@ -736,8 +656,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				transaction.Destinations.Add(destination.m_uid);
 
 			activeDistributions[source.m_uid] = transaction;
-
-			log.Info($"Distribution sequence started | Source={source.m_uid} | Destinations={transaction.Destinations.Count}");
 
 			ProcessCurrentDestination(source.m_uid);
 		}
@@ -773,8 +691,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 				if (DestinationUsesWardCheck(destination))
 				{
-					log.Info($"Requesting ward access check | Source={sourceId} | Destination={destination.m_uid} | PlayerID={transaction.PlayerId}");
-
 					ZRoutedRpc.instance.InvokeRoutedRPC(transaction.DepositingPeer, DestinationAccessRequestRpcName, sourceId, destination.m_uid, transaction.PlayerId);
 					return;
 				}
@@ -801,12 +717,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			{
 				if (destinationInventory.ContainsItemByName(sourceItem.m_shared.m_name))
 					return true;
-
-				/*foreach (ItemDrop.ItemData destinationItem in destinationInventory.GetAllItems())
-				{
-					if (IsSameItemType(sourceItem, destinationItem))
-						return true;
-				}*/
 			}
 
 			return false;
@@ -841,21 +751,15 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			{
 				destination.SetOwner(serverId);
 
-				//log.Info($"Unowned destination acquired by server | Source={source.m_uid} | Destination={destination.m_uid} | PlayerID={playerId}");
-
 				TryAcquireDestinationOwnership(source.m_uid, destination, serverId, destination.DataRevision);
 				return;
 			}
 
 			if (currentOwner == serverId)
 			{
-				//log.Info($"Destination already owned by server | Source={source.m_uid} | Destination={destination.m_uid} | PlayerID={playerId}");
-
 				TryAcquireDestinationOwnership(source.m_uid, destination, serverId, destination.DataRevision);
 				return;
 			}
-
-			log.Info($"Destination handoff requested | Source={source.m_uid} | Destination={destination.m_uid} | Owner={currentOwner} | Revision={destination.DataRevision}");
 
 			ZRoutedRpc.instance.InvokeRoutedRPC(currentOwner, DestinationHandoffRequestRpcName, source.m_uid, destination.m_uid);
 		}
@@ -888,8 +792,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			ZDOMan.instance.ForceSendZDO(destinationId);
 
-			log.Info($"Destination flushed by owner | Source={sourceId} | Destination={destinationId} | Revision={expectedRevision}");
-
 			ZRoutedRpc.instance.InvokeRoutedRPC(sender, DestinationHandoffResponseRpcName, sourceId, destinationId, expectedRevision);
 		}
 
@@ -915,8 +817,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				log.Info($"Destination owner changed before response | Destination={destinationId} | Sender={sender} | Owner={destination.GetOwner()}");
 				return;
 			}
-
-			log.Info($"Destination handoff response | Destination={destinationId} | ServerRevision={destination.DataRevision} | ExpectedRevision={expectedRevision} | Owner={sender}");
 
 			if (destination.DataRevision >= expectedRevision)
 			{
@@ -948,8 +848,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				return;
 
 			bool allowed = PrivateArea.CheckAccess(destination.GetPosition(), 0f, flash: false);
-
-			log.Info($"Ward access checked | Destination={destinationId} | PlayerID={playerId} | Allowed={allowed}");
 
 			ZRoutedRpc.instance.InvokeRoutedRPC(sender, DestinationAccessResponseRpcName, sourceId, destinationId, allowed, playerId);
 		}
@@ -986,8 +884,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				AdvanceDistribution(sourceId);
 				return;
 			}
-
-			log.Info($"Destination access granted | Destination={destinationId} | PlayerID={playerId}");
 
 			RequestDestinationHandoff(source, destination);
 		}
@@ -1057,8 +953,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			if (expectedOwner != serverId)
 				destination.SetOwner(serverId);
 
-			//log.Info($"Destination ownership acquired | Source={sourceId} | Destination={destination.m_uid} | Revision={destination.DataRevision} | Owner={destination.GetOwner()} | PlayerID={playerId}");
-
 			int moved = TransferItemsToDestination(sourceId, destination);
 
 			if (moved > 0 && activeDistributions.TryGetValue(sourceId, out DistributionTransaction transaction))
@@ -1072,8 +966,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				destination.SetOwner(expectedOwner);
 				ZDOMan.instance.ForceSendZDO(destination.m_uid);
 			}
-
-			log.Info($"Destination processing completed | Destination={destination.m_uid} | Moved={moved} | Owner={destination.GetOwner()}");
 
 			AdvanceDistribution(sourceId);
 		}
@@ -1112,191 +1004,207 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			return false;
 		}
 
-		/*private static void LogServerSourceInventory(ZDO zdo)
+		private static void AddSmartDropboxEffect(GameObject prefab)
 		{
-			if (zdo == null || ZNet.instance == null || !ZNet.instance.IsServer())
-				return;
-
-			if (ObjectDB.instance == null)
+			GameObject wardPrefab = MPrefabManager.GetPrefab("guard_stone");
+			if (wardPrefab == null)
 			{
-				log.Warn($"Cannot read Smart Dropbox inventory: ObjectDB is unavailable | ZDO={zdo.m_uid}");
+				log.Warn("Could not find guard_stone for Smart Dropbox visual effect.");
 				return;
 			}
 
-			if (SmartDropboxPrefab == null)
+			Transform sourceEffect = wardPrefab.transform.Find("WayEffect");
+			if (sourceEffect == null)
 			{
-				log.Warn($"Cannot read Smart Dropbox inventory: prefab is unavailable | ZDO={zdo.m_uid}");
+				log.Warn("Could not find WayEffect on guard_stone.");
 				return;
 			}
 
-			Container prefabContainer = SmartDropboxPrefab.GetComponent<Container>();
-			if (prefabContainer == null)
+			GameObject effect = UnityEngine.Object.Instantiate(sourceEffect.gameObject, prefab.transform);
+			effect.name = "SmartDropboxEffect";
+
+			effect.transform.localPosition = new Vector3(0f, 0.65f, 0f);
+			effect.transform.localRotation = Quaternion.identity;
+			effect.transform.localScale = Vector3.one * 0.55f;
+
+			foreach (Component component in effect.GetComponentsInChildren<Component>(true))
 			{
-				log.Warn($"Cannot read Smart Dropbox inventory: prefab Container is unavailable | ZDO={zdo.m_uid}");
-				return;
+				if (component != null && component.GetType().Name == "AudioSource")
+					UnityEngine.Object.DestroyImmediate(component);
 			}
 
-			byte[] data = zdo.GetByteArray(ZDOVars.s_items);
+			ConfigureSmartDropboxEffect(effect);
 
-			if (data == null || data.Length == 0)
-			{
-				log.Info($"Source inventory read | ZDO={zdo.m_uid} | Stacks=0");
+			effect.SetActive(ConfigManager.SmartDropboxEnabled.Value);
+		}
+
+
+		private static void ConfigureSmartDropboxEffect(GameObject effect)
+		{
+			if (effect == null)
 				return;
-			}
 
-			try
+			DisableEffectChild(effect.transform, "Point light");
+			DisableEffectChild(effect.transform, "flare");
+			DisableEffectChild(effect.transform, "pulse (1)");
+			DisableEffectChild(effect.transform, "pulse (2)");
+
+			// Optional: if the glow itself is still too bright, disable this too.
+			// DisableEffectChild(effect.transform, "glow");
+		}
+
+		private static void DisableEffectChild(Transform root, string childName)
+		{
+			Transform child = root.Find(childName);
+			if (child != null)
+				child.gameObject.SetActive(false);
+		}
+
+		private static void ApplySmartDropboxMaterial(GameObject prefab)
+		{
+			if (prefab == null)
+				return;
+
+			foreach (Renderer renderer in prefab.GetComponentsInChildren<Renderer>(true))
 			{
-				Inventory temporaryInventory = new Inventory(
-					"Smart Dropbox Server Read",
-					prefabContainer.m_bkg,
-					prefabContainer.m_width,
-					prefabContainer.m_height);
+				Material[] materials = renderer.sharedMaterials;
+				bool changed = false;
 
-				ZPackage package = new ZPackage(data);
-				temporaryInventory.Load(package);
-
-				List<ItemDrop.ItemData> items = temporaryInventory.GetAllItems();
-
-				log.Info($"Source inventory read | ZDO={zdo.m_uid} | Revision={zdo.DataRevision} | Stacks={items.Count} | Size={prefabContainer.m_width}x{prefabContainer.m_height}");
-
-				foreach (ItemDrop.ItemData item in items)
+				for (int i = 0; i < materials.Length; i++)
 				{
-					string itemName = item.m_dropPrefab != null ? item.m_dropPrefab.name : item.m_shared.m_name;
-
-					log.Info($"Source stack | Item={itemName} | Amount={item.m_stack} | Grid={item.m_gridPos.x},{item.m_gridPos.y}");
-				}
-			}
-			catch (Exception ex)
-			{
-				log.Error($"Failed to read Smart Dropbox source inventory | ZDO={zdo.m_uid} | {ex}");
-			}
-		}*/
-
-		/*private static void LogDestinationCandidates(ZDO source)
-		{
-			List<ZDO> candidates = FindDestinationCandidates(source);
-
-			log.Info($"Destination discovery | Source={source.m_uid} | Radius={SearchRadius:0}m | Candidates={candidates.Count}");
-
-			foreach (ZDO candidate in candidates)
-			{
-				GameObject prefab = ZNetScene.instance.GetPrefab(candidate.GetPrefab());
-				string prefabName = prefab != null ? prefab.name : candidate.GetPrefab().ToString();
-
-				float distance = Vector3.Distance(source.GetPosition(), candidate.GetPosition());
-				byte[] itemData = candidate.GetByteArray(ZDOVars.s_items);
-				bool inUse = candidate.GetInt(ZDOVars.s_inUse) == 1;
-
-				log.Info($"Destination candidate | ZDO={candidate.m_uid} | Prefab={prefabName} | Distance={distance:0.0}m | Owner={candidate.GetOwner()} | InUse={inUse} | ItemDataLength={itemData?.Length ?? 0}");
-			}
-		}*/
-
-		/*private static void LogDestinationMatches(ZDO source)
-		{
-			if (!TryReadInventory(source, out Inventory sourceInventory))
-			{
-				log.Warn($"Could not read Smart Dropbox inventory for item matching | ZDO={source.m_uid}");
-				return;
-			}
-
-			List<ItemDrop.ItemData> sourceItems = sourceInventory.GetAllItems();
-			List<ZDO> candidates = FindDestinationCandidates(source);
-
-			if (sourceItems.Count == 0)
-			{
-				log.Info($"Item matching skipped: Smart Dropbox is empty | ZDO={source.m_uid}");
-				return;
-			}
-
-			foreach (ItemDrop.ItemData sourceItem in sourceItems)
-			{
-				string itemName = sourceItem.m_dropPrefab != null ? sourceItem.m_dropPrefab.name : sourceItem.m_shared.m_name;
-				int matchingDestinations = 0;
-
-				foreach (ZDO candidate in candidates)
-				{
-					if (!TryReadInventory(candidate, out Inventory destinationInventory))
+					Material material = materials[i];
+					if (material == null || !material.name.StartsWith("ironchest"))
 						continue;
 
-					int matchingStacks = 0;
-					int existingAmount = 0;
-
-					foreach (ItemDrop.ItemData destinationItem in destinationInventory.GetAllItems())
+					Material smartMaterial = new Material(material)
 					{
-						if (!IsSameItemType(sourceItem, destinationItem))
-							continue;
+						name = "SmartDropbox_IronChest"
+					};
 
-						matchingStacks++;
-						existingAmount += destinationItem.m_stack;
-					}
+					if (smartMaterial.HasProperty("_Color"))
+						smartMaterial.SetColor("_Color", Color.white);
 
-					if (matchingStacks == 0)
-						continue;
+					if (smartMaterial.HasProperty("_Metallic"))
+						smartMaterial.SetFloat("_Metallic", 0.9f);
 
-					matchingDestinations++;
+					if (smartMaterial.HasProperty("_Glossiness"))
+						smartMaterial.SetFloat("_Glossiness", 0.55f);
 
-					GameObject prefab = ZNetScene.instance.GetPrefab(candidate.GetPrefab());
-					string prefabName = prefab != null ? prefab.name : candidate.GetPrefab().ToString();
-					float distance = Vector3.Distance(source.GetPosition(), candidate.GetPosition());
-
-					log.Info($"Item match | Item={itemName} | Destination={candidate.m_uid} | Prefab={prefabName} | Distance={distance:0.0}m | MatchingStacks={matchingStacks} | ExistingAmount={existingAmount}");
+					materials[i] = smartMaterial;
+					changed = true;
 				}
 
-				log.Info($"Item match summary | Item={itemName} | SourceAmount={sourceItem.m_stack} | MatchingDestinations={matchingDestinations}");
+				if (changed)
+					renderer.sharedMaterials = materials;
 			}
-		}*/
+
+			log.Info("Applied Smart Dropbox material.");
+		}
+
+		private static void ApplySmartDropboxMaterial(GameObject prefab, string sourcePrefabName, string sourceMaterialName)
+		{
+			if (prefab == null)
+				return;
+
+			GameObject sourcePrefab = MPrefabManager.GetPrefab(sourcePrefabName);
+			if (sourcePrefab == null)
+			{
+				log.Warn($"Could not find source prefab '{sourcePrefabName}' for Smart Dropbox material.");
+				return;
+			}
+
+			Material sourceMaterial = null;
+
+			foreach (Renderer renderer in sourcePrefab.GetComponentsInChildren<Renderer>(true))
+			{
+				foreach (Material material in renderer.sharedMaterials)
+				{
+					if (material == null || material.name != sourceMaterialName)
+						continue;
+
+					sourceMaterial = material;
+					break;
+				}
+
+				if (sourceMaterial != null)
+					break;
+			}
+
+			if (sourceMaterial == null)
+			{
+				log.Warn($"Could not find material '{sourceMaterialName}' on prefab '{sourcePrefabName}'.");
+				return;
+			}
+
+			foreach (Renderer renderer in prefab.GetComponentsInChildren<Renderer>(true))
+			{
+				Material[] materials = renderer.sharedMaterials;
+				bool changed = false;
+
+				for (int i = 0; i < materials.Length; i++)
+				{
+					if (materials[i] == null || !materials[i].name.StartsWith("ironchest"))
+						continue;
+
+					materials[i] = new Material(sourceMaterial)
+					{
+						name = "SmartDropbox_Material"
+					};
+
+					changed = true;
+				}
+
+				if (changed)
+					renderer.sharedMaterials = materials;
+			}
+
+			log.Info($"Applied '{sourceMaterialName}' to Smart Dropbox.");
+		}
+
+		private static void SetVisualState(GameObject dropbox, bool enabled)
+		{
+			if (dropbox == null)
+				return;
+
+			Transform effect = dropbox.transform.Find("SmartDropboxEffect");
+			if (effect != null)
+				effect.gameObject.SetActive(enabled);
+		}
+
+		internal static void RegisterDropbox(SmartDropboxBehavior dropbox)
+		{
+			if (dropbox == null)
+				return;
+
+			activeDropboxes.Add(dropbox);
+			SetVisualState(dropbox.gameObject, ConfigManager.SmartDropboxEnabled.Value);
+		}
+
+		internal static void UnregisterDropbox(SmartDropboxBehavior dropbox)
+		{
+			if (dropbox == null)
+				return;
+
+			activeDropboxes.Remove(dropbox);
+		}
 	}
 
 	internal sealed class SmartDropboxBehavior : MonoBehaviour
 	{
-		private static readonly LogManager log = new LogManager("Smart Dropbox State", LogManager.LogLevel.Info);
-
 		private ZNetView nview;
-		//private Container container;
-		//private Inventory inventory;
 
 		private void Start()
 		{
 			nview = SmartDropbox.GetContainerZNetView(GetComponent<Container>());
+
 			SmartDropbox.HideRadiusMarker(gameObject);
+			SmartDropbox.RegisterDropbox(this);
 		}
 
-		/*private void OnDestroy()
+		private void OnDestroy()
 		{
-			if (inventory != null)
-				inventory.m_onChanged -= OnInventoryChanged;
+			SmartDropbox.UnregisterDropbox(this);
 		}
-
-		private void OnInventoryChanged()
-		{
-			LogState("Inventory changed");
-		}*/
-
-		/*internal void LogState(string stage)
-		{
-			if (container == null)
-				container = GetComponent<Container>();
-
-			if (nview == null)
-				nview = SmartDropbox.GetContainerZNetView(container);
-
-			if (nview == null || nview.GetZDO() == null)
-			{
-				log.Info($"{stage} | ZDO unavailable.");
-				return;
-			}
-
-			ZDO zdo = nview.GetZDO();
-
-			long sessionId = ZDOMan.instance != null ? ZDOMan.GetSessionID() : 0L;
-			bool isServer = ZNet.instance != null && ZNet.instance.IsServer();
-			int stackCount = container?.GetInventory()?.NrOfItems() ?? -1;
-			bool inUse = container != null && container.IsInUse();
-			byte[] itemData = zdo.GetByteArray(ZDOVars.s_items);
-			int itemDataLength = itemData?.Length ?? 0;
-
-			log.Info($"{stage} | Session={sessionId} | Server={isServer} | ZDO={zdo.m_uid} | Owner={zdo.GetOwner()} | LocalOwner={nview.IsOwner()} | Persistent={zdo.Persistent} | Revision={zdo.DataRevision} | InUse={inUse} | Stacks={stackCount} | ItemDataLength={itemDataLength}");
-		}*/
 
 		internal void RequestServerHandoff()
 		{

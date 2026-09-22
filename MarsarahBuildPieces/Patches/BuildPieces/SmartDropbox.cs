@@ -29,7 +29,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			"piece_chest_wood".GetStableHashCode(),
 			"piece_chest".GetStableHashCode(),
 			"piece_chest_blackmetal".GetStableHashCode(),
-			"piece_chest_private".GetStableHashCode()
+			"piece_chest_barrel".GetStableHashCode()
 		};
 
 		private sealed class DistributionTransaction
@@ -175,8 +175,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 		private static void SetupSmartDropboxDefaults(GameObject prefab)
 		{
-			ZNetView znet = prefab.GetComponent<ZNetView>();
-
 			Piece piece = prefab.GetComponent<Piece>();
 			if (piece == null)
 			{
@@ -650,6 +648,87 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			}
 		}
 
+		private static int MoveMatchingItems(Inventory sourceInventory, Inventory destinationInventory, ZDOID destinationId)
+		{
+			int totalMoved = 0;
+			List<ItemDrop.ItemData> sourceItems = new List<ItemDrop.ItemData>(sourceInventory.GetAllItems());
+
+			foreach (ItemDrop.ItemData sourceItem in sourceItems)
+			{
+				if (!destinationInventory.ContainsItemByName(sourceItem.m_shared.m_name))
+					continue;
+
+				int amountBefore = sourceItem.m_stack;
+				bool fullyAdded = destinationInventory.AddItem(sourceItem);
+
+				int moved = fullyAdded ? amountBefore : amountBefore - sourceItem.m_stack;
+
+				if (fullyAdded)
+					sourceInventory.RemoveItem(sourceItem);
+
+				if (moved <= 0)
+					continue;
+
+				totalMoved += moved;
+
+				string itemName = sourceItem.m_dropPrefab != null ? sourceItem.m_dropPrefab.name : sourceItem.m_shared.m_name;
+
+				log.Info($"Item transferred | Item={itemName} | Amount={moved} | Destination={destinationId}");
+			}
+
+			return totalMoved;
+		}
+
+		private static byte[] SerializeInventory(Inventory inventory)
+		{
+			ZPackage package = new ZPackage();
+			inventory.Save(package);
+			return package.GetArray();
+		}
+
+		private static int TransferItemsToDestination(ZDOID sourceId, ZDO destination)
+		{
+			ZDO source = ZDOMan.instance?.GetZDO(sourceId);
+
+			if (source == null || destination == null)
+				return 0;
+
+			if (!TryReadInventory(source, out Inventory sourceInventory))
+				return 0;
+
+			if (!TryReadInventory(destination, out Inventory destinationInventory))
+				return 0;
+
+			int moved = MoveMatchingItems(sourceInventory, destinationInventory, destination.m_uid);
+
+			if (moved <= 0)
+			{
+				log.Info($"Destination had no available space for matching items | Destination={destination.m_uid}");
+				return 0;
+			}
+
+			try
+			{
+				byte[] sourceData = SerializeInventory(sourceInventory);
+				byte[] destinationData = SerializeInventory(destinationInventory);
+
+				source.Set(ZDOVars.s_items, sourceData);
+				destination.Set(ZDOVars.s_items, destinationData);
+
+				ZDOMan.instance.ForceSendZDO(source.m_uid);
+				ZDOMan.instance.ForceSendZDO(destination.m_uid);
+
+				log.Info($"Inventory transfer saved | Source={source.m_uid} | Destination={destination.m_uid} | Moved={moved}");
+
+				return moved;
+			}
+			catch (Exception ex)
+			{
+				log.Error($"Failed to save Smart Dropbox transfer | Source={sourceId} | Destination={destination.m_uid} | {ex}");
+				return 0;
+			}
+		}
+
 		private static bool IsSameItemType(ItemDrop.ItemData sourceItem, ItemDrop.ItemData destinationItem)
 		{
 			if (sourceItem == null || destinationItem == null)
@@ -819,6 +898,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			if (destination.GetInt(ZDOVars.s_inUse) == 1)
 			{
 				log.Info($"Destination skipped because it is in use | ZDO={destination.m_uid}");
+				AdvanceDistribution(source.m_uid);
 				return;
 			}
 
@@ -830,12 +910,16 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				destination.SetOwner(serverId);
 
 				log.Info($"Unowned destination acquired by server | Source={source.m_uid} | Destination={destination.m_uid} | PlayerID={playerId}");
+
+				TryAcquireDestinationOwnership(source.m_uid, destination, serverId, destination.DataRevision, playerId);
 				return;
 			}
 
 			if (currentOwner == serverId)
 			{
 				log.Info($"Destination already owned by server | Source={source.m_uid} | Destination={destination.m_uid} | PlayerID={playerId}");
+
+				TryAcquireDestinationOwnership(source.m_uid, destination, serverId, destination.DataRevision, playerId);
 				return;
 			}
 
@@ -858,13 +942,17 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			if (destination.GetOwner() != localId)
 				return;
 
+			uint expectedRevision = destination.DataRevision;
+
 			if (destination.GetInt(ZDOVars.s_inUse) == 1)
 			{
-				log.Info($"Destination handoff refused because container is in use | ZDO={destinationId}");
-				return;
-			}
+				ZDOMan.instance.ForceSendZDO(destinationId);
 
-			uint expectedRevision = destination.DataRevision;
+				log.Info($"Destination handoff refused because container is in use | ZDO={destinationId}");
+
+				ZRoutedRpc.instance.InvokeRoutedRPC(sender, DestinationHandoffResponseRpcName, sourceId, destinationId, expectedRevision, playerId);
+				return;
+			}			
 
 			ZDOMan.instance.ForceSendZDO(destinationId);
 
@@ -1013,36 +1101,55 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 		private static void TryAcquireDestinationOwnership(ZDOID sourceId, ZDO destination, long expectedOwner, uint expectedRevision, long playerId)
 		{
 			if (destination == null || ZDOMan.instance == null)
+			{
+				AdvanceDistribution(sourceId);
 				return;
+			}
 
 			if (destination.DataRevision < expectedRevision)
+			{
+				log.Info($"Destination revision fell behind before acquisition | Destination={destination.m_uid} | Revision={destination.DataRevision} | Expected={expectedRevision}");
+				AdvanceDistribution(sourceId);
 				return;
+			}
 
 			if (destination.GetOwner() != expectedOwner)
 			{
 				log.Info($"Destination ownership changed before acquisition | Destination={destination.m_uid} | ExpectedOwner={expectedOwner} | Owner={destination.GetOwner()}");
+				AdvanceDistribution(sourceId);
+				return;
+			}
+
+			if (!CheckDestinationPrivacy(destination, playerId))
+			{
+				log.Info($"Destination acquisition cancelled because access changed | Destination={destination.m_uid} | PlayerID={playerId}");
+				AdvanceDistribution(sourceId);
 				return;
 			}
 
 			if (destination.GetInt(ZDOVars.s_inUse) == 1)
 			{
 				log.Info($"Destination acquisition cancelled because container is in use | Destination={destination.m_uid}");
+				AdvanceDistribution(sourceId);
 				return;
 			}
 
 			long serverId = ZDOMan.GetSessionID();
 
-			destination.SetOwner(serverId);
+			if (expectedOwner != serverId)
+				destination.SetOwner(serverId);
 
 			log.Info($"Destination ownership acquired | Source={sourceId} | Destination={destination.m_uid} | Revision={destination.DataRevision} | Owner={destination.GetOwner()} | PlayerID={playerId}");
 
-			ZDOMan.instance.ForceSendZDO(destination.m_uid);
+			int moved = TransferItemsToDestination(sourceId, destination);
 
-			destination.SetOwner(expectedOwner);
+			if (expectedOwner != serverId)
+			{
+				destination.SetOwner(expectedOwner);
+				ZDOMan.instance.ForceSendZDO(destination.m_uid);
+			}
 
-			ZDOMan.instance.ForceSendZDO(destination.m_uid);
-
-			log.Info($"Destination ownership returned | Destination={destination.m_uid} | Owner={destination.GetOwner()}");
+			log.Info($"Destination processing completed | Destination={destination.m_uid} | Moved={moved} | Owner={destination.GetOwner()}");
 
 			AdvanceDistribution(sourceId);
 		}

@@ -15,6 +15,10 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 		private static GameObject SmartDropboxPrefab;
 
 		private const string HandoffRpcName = MarsarahBuildPieces.ModGUID + ".SmartDropboxHandoff";
+		private const string DestinationHandoffRequestRpcName = MarsarahBuildPieces.ModGUID + ".SmartDropboxDestinationHandoffRequest";
+		private const string DestinationHandoffResponseRpcName = MarsarahBuildPieces.ModGUID + ".SmartDropboxDestinationHandoffResponse";
+		private const string DestinationAccessRequestRpcName = MarsarahBuildPieces.ModGUID + ".SmartDropboxDestinationAccessRequest";
+		private const string DestinationAccessResponseRpcName = MarsarahBuildPieces.ModGUID + ".SmartDropboxDestinationAccessResponse";
 		internal const float HandoffTimeoutSeconds = 5f;
 
 		private static ZRoutedRpc registeredRoutedRpc;
@@ -27,6 +31,16 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			"piece_chest_blackmetal".GetStableHashCode(),
 			"piece_chest_private".GetStableHashCode()
 		};
+
+		private sealed class DistributionTransaction
+		{
+			internal long DepositingPeer;
+			internal long PlayerId;
+			internal readonly List<ZDOID> Destinations = new List<ZDOID>();
+			internal int Index;
+		}
+
+		private static readonly Dictionary<ZDOID, DistributionTransaction> activeDistributions = new Dictionary<ZDOID, DistributionTransaction>();
 
 		internal static float SearchRadius => ConfigManager.SmartDropboxRadius.Value;
 
@@ -162,13 +176,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 		private static void SetupSmartDropboxDefaults(GameObject prefab)
 		{
 			ZNetView znet = prefab.GetComponent<ZNetView>();
-			/*if (znet != null)
-			{
-				znet.m_persistent = true;
-				znet.m_distant = false;
-				znet.m_type = ZDO.ObjectType.Default;
-				znet.m_syncInitialScale = true;
-			}*/
 
 			Piece piece = prefab.GetComponent<Piece>();
 			if (piece == null)
@@ -304,7 +311,13 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			if (rpc == null || registeredRoutedRpc == rpc)
 				return;
 
-			rpc.Register<ZDOID, uint>(HandoffRpcName, RPC_RequestServerHandoff);
+			rpc.Register<ZDOID, uint, long>(HandoffRpcName, RPC_RequestServerHandoff);
+
+			rpc.Register<ZDOID, ZDOID, long>(DestinationHandoffRequestRpcName, RPC_RequestDestinationHandoff);
+			rpc.Register<ZDOID, ZDOID, uint, long>(DestinationHandoffResponseRpcName, RPC_DestinationHandoffResponse);
+
+			rpc.Register<ZDOID, ZDOID, long>(DestinationAccessRequestRpcName, RPC_RequestDestinationAccess);
+			rpc.Register<ZDOID, ZDOID, bool, long>(DestinationAccessResponseRpcName, RPC_DestinationAccessResponse);
 
 			registeredRoutedRpc = rpc;
 
@@ -335,10 +348,11 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			log.Info($"Handoff requested | ZDO={zdo.m_uid} | ExpectedRevision={expectedRevision} | Owner={zdo.GetOwner()}");
 
-			ZRoutedRpc.instance.InvokeRoutedRPC(HandoffRpcName, zdo.m_uid, expectedRevision);
+			long playerId = Game.instance?.GetPlayerProfile()?.GetPlayerID() ?? 0L;
+			ZRoutedRpc.instance.InvokeRoutedRPC(HandoffRpcName, zdo.m_uid, expectedRevision, playerId);
 		}
 
-		private static void RPC_RequestServerHandoff(long sender, ZDOID zdoId, uint expectedRevision)
+		private static void RPC_RequestServerHandoff(long sender, ZDOID zdoId, uint expectedRevision, long playerId)
 		{
 			if (ZNet.instance == null || !ZNet.instance.IsServer())
 				return;
@@ -372,7 +386,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			if (zdo.DataRevision >= expectedRevision)
 			{
-				TryAcquireServerOwnership(sender, zdo, expectedRevision);
+				TryAcquireServerOwnership(sender, zdo, expectedRevision, playerId);
 				return;
 			}
 
@@ -384,10 +398,10 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			log.Info($"Waiting for Smart Dropbox synchronization | ZDO={zdoId} | ServerRevision={zdo.DataRevision} | ExpectedRevision={expectedRevision}");
 
-			ZNetScene.instance.StartCoroutine(WaitForServerHandoff(sender, zdoId, expectedRevision));
+			ZNetScene.instance.StartCoroutine(WaitForServerHandoff(sender, zdoId, expectedRevision, playerId));
 		}
 
-		internal static void TryAcquireServerOwnership(long sender, ZDO zdo, uint expectedRevision)
+		internal static void TryAcquireServerOwnership(long sender, ZDO zdo, uint expectedRevision, long playerId)
 		{
 			if (zdo == null || ZDOMan.instance == null)
 				return;
@@ -419,13 +433,14 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			ZDOMan.instance.ForceSendZDO(zdo.m_uid);
 
 			log.Info($"Server ownership acquired | ZDO={zdo.m_uid} | Persistent={zdo.Persistent} | Revision={zdo.DataRevision} | ExpectedRevision={expectedRevision} | Owner={zdo.GetOwner()}");
-
+			
 			LogServerSourceInventory(zdo);
 			LogDestinationCandidates(zdo);
 			LogDestinationMatches(zdo);
+			StartDistributionTransaction(zdo, sender, playerId);
 		}
 
-		private static IEnumerator WaitForServerHandoff(long sender, ZDOID zdoId, uint expectedRevision)
+		private static IEnumerator WaitForServerHandoff(long sender, ZDOID zdoId, uint expectedRevision, long playerId)
 		{
 			float startTime = Time.realtimeSinceStartup;
 
@@ -447,7 +462,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 					log.Info($"(WaitForServerHandoff) Source synchronized | ZDO={zdoId} | Revision={zdo.DataRevision} | ExpectedRevision={expectedRevision} | ItemDataLength={itemData?.Length ?? 0}");
 
-					TryAcquireServerOwnership(sender, zdo, expectedRevision);
+					TryAcquireServerOwnership(sender, zdo, expectedRevision, playerId);
 					yield break;
 				}
 
@@ -646,6 +661,392 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			return sourceItem.m_shared.m_name == destinationItem.m_shared.m_name;
 		}
 
+		private static List<ZDO> FindMatchingDestinations(ZDO source)
+		{
+			List<ZDO> result = new List<ZDO>();
+
+			if (!TryReadInventory(source, out Inventory sourceInventory))
+				return result;
+
+			List<ItemDrop.ItemData> sourceItems = sourceInventory.GetAllItems();
+
+			foreach (ZDO candidate in FindDestinationCandidates(source))
+			{
+				if (!TryReadInventory(candidate, out Inventory destinationInventory))
+					continue;
+
+				bool hasMatch = false;
+
+				foreach (ItemDrop.ItemData sourceItem in sourceItems)
+				{
+					foreach (ItemDrop.ItemData destinationItem in destinationInventory.GetAllItems())
+					{
+						if (!IsSameItemType(sourceItem, destinationItem))
+							continue;
+
+						hasMatch = true;
+						break;
+					}
+
+					if (hasMatch)
+						break;
+				}
+
+				if (hasMatch)
+					result.Add(candidate);
+			}
+
+			return result;
+		}
+
+		private static void StartDistributionTransaction(ZDO source, long depositingPeer, long playerId)
+		{
+			if (source == null)
+				return;
+
+			List<ZDO> destinations = FindMatchingDestinations(source);
+
+			if (destinations.Count == 0)
+			{
+				log.Info($"Distribution finished: no matching destinations | Source={source.m_uid}");
+				return;
+			}
+
+			DistributionTransaction transaction = new DistributionTransaction
+			{
+				DepositingPeer = depositingPeer,
+				PlayerId = playerId
+			};
+
+			foreach (ZDO destination in destinations)
+				transaction.Destinations.Add(destination.m_uid);
+
+			activeDistributions[source.m_uid] = transaction;
+
+			log.Info($"Distribution sequence started | Source={source.m_uid} | Destinations={transaction.Destinations.Count}");
+
+			ProcessCurrentDestination(source.m_uid);
+		}
+
+		private static void ProcessCurrentDestination(ZDOID sourceId)
+		{
+			if (!activeDistributions.TryGetValue(sourceId, out DistributionTransaction transaction))
+				return;
+
+			while (transaction.Index < transaction.Destinations.Count)
+			{
+				ZDO source = ZDOMan.instance?.GetZDO(sourceId);
+				ZDO destination = ZDOMan.instance?.GetZDO(transaction.Destinations[transaction.Index]);
+
+				if (source == null)
+				{
+					activeDistributions.Remove(sourceId);
+					return;
+				}
+
+				if (destination == null)
+				{
+					transaction.Index++;
+					continue;
+				}
+
+				if (!DestinationStillMatchesSource(source, destination))
+				{
+					log.Info($"Destination skipped: no remaining matching source items | Destination={destination.m_uid}");
+					transaction.Index++;
+					continue;
+				}
+
+				if (!CheckDestinationPrivacy(destination, transaction.PlayerId))
+				{
+					log.Info($"Destination skipped: player lacks container access | Destination={destination.m_uid} | PlayerID={transaction.PlayerId}");
+					transaction.Index++;
+					continue;
+				}
+
+				if (DestinationUsesWardCheck(destination))
+				{
+					log.Info($"Requesting ward access check | Source={sourceId} | Destination={destination.m_uid} | PlayerID={transaction.PlayerId}");
+
+					ZRoutedRpc.instance.InvokeRoutedRPC(transaction.DepositingPeer, DestinationAccessRequestRpcName, sourceId, destination.m_uid, transaction.PlayerId);
+					return;
+				}
+
+				RequestDestinationHandoff(source, destination, transaction.PlayerId);
+				return;
+			}
+
+			activeDistributions.Remove(sourceId);
+
+			log.Info($"Distribution destination sequence completed | Source={sourceId}");
+		}
+
+		private static bool DestinationStillMatchesSource(ZDO source, ZDO destination)
+		{
+			if (!TryReadInventory(source, out Inventory sourceInventory))
+				return false;
+
+			if (!TryReadInventory(destination, out Inventory destinationInventory))
+				return false;
+
+			foreach (ItemDrop.ItemData sourceItem in sourceInventory.GetAllItems())
+			{
+				foreach (ItemDrop.ItemData destinationItem in destinationInventory.GetAllItems())
+				{
+					if (IsSameItemType(sourceItem, destinationItem))
+						return true;
+				}
+			}
+
+			return false;
+		}
+
+		private static void AdvanceDistribution(ZDOID sourceId)
+		{
+			if (!activeDistributions.TryGetValue(sourceId, out DistributionTransaction transaction))
+				return;
+
+			transaction.Index++;
+
+			ProcessCurrentDestination(sourceId);
+		}
+
+		private static void RequestDestinationHandoff(ZDO source, ZDO destination, long playerId)
+		{
+			if (source == null || destination == null || ZDOMan.instance == null || ZRoutedRpc.instance == null)
+				return;
+
+			if (destination.GetInt(ZDOVars.s_inUse) == 1)
+			{
+				log.Info($"Destination skipped because it is in use | ZDO={destination.m_uid}");
+				return;
+			}
+
+			long serverId = ZDOMan.GetSessionID();
+			long currentOwner = destination.GetOwner();
+
+			if (!destination.HasOwner())
+			{
+				destination.SetOwner(serverId);
+
+				log.Info($"Unowned destination acquired by server | Source={source.m_uid} | Destination={destination.m_uid} | PlayerID={playerId}");
+				return;
+			}
+
+			if (currentOwner == serverId)
+			{
+				log.Info($"Destination already owned by server | Source={source.m_uid} | Destination={destination.m_uid} | PlayerID={playerId}");
+				return;
+			}
+
+			log.Info($"Destination handoff requested | Source={source.m_uid} | Destination={destination.m_uid} | Owner={currentOwner} | Revision={destination.DataRevision}");
+
+			ZRoutedRpc.instance.InvokeRoutedRPC(currentOwner, DestinationHandoffRequestRpcName, source.m_uid, destination.m_uid, playerId);
+		}
+
+		private static void RPC_RequestDestinationHandoff(long sender, ZDOID sourceId, ZDOID destinationId, long playerId)
+		{
+			if (ZNet.instance == null || ZNet.instance.IsServer() || ZDOMan.instance == null || ZRoutedRpc.instance == null)
+				return;
+
+			ZDO destination = ZDOMan.instance.GetZDO(destinationId);
+			if (destination == null)
+				return;
+
+			long localId = ZDOMan.GetSessionID();
+
+			if (destination.GetOwner() != localId)
+				return;
+
+			if (destination.GetInt(ZDOVars.s_inUse) == 1)
+			{
+				log.Info($"Destination handoff refused because container is in use | ZDO={destinationId}");
+				return;
+			}
+
+			uint expectedRevision = destination.DataRevision;
+
+			ZDOMan.instance.ForceSendZDO(destinationId);
+
+			log.Info($"Destination flushed by owner | Source={sourceId} | Destination={destinationId} | Revision={expectedRevision}");
+
+			ZRoutedRpc.instance.InvokeRoutedRPC(sender, DestinationHandoffResponseRpcName, sourceId, destinationId, expectedRevision, playerId);
+		}
+
+		private static void RPC_DestinationHandoffResponse(long sender, ZDOID sourceId, ZDOID destinationId, uint expectedRevision, long playerId)
+		{
+			if (ZNet.instance == null || !ZNet.instance.IsServer() || ZDOMan.instance == null)
+				return;
+
+			ZDO source = ZDOMan.instance.GetZDO(sourceId);
+			ZDO destination = ZDOMan.instance.GetZDO(destinationId);
+
+			if (source == null || destination == null)
+				return;
+
+			if (source.GetPrefab() != SmartDropboxPrefabHash)
+				return;
+
+			if (!SupportedStoragePrefabs.Contains(destination.GetPrefab()))
+				return;
+
+			if (destination.GetOwner() != sender)
+			{
+				log.Info($"Destination owner changed before response | Destination={destinationId} | Sender={sender} | Owner={destination.GetOwner()}");
+				return;
+			}
+
+			log.Info($"Destination handoff response | Destination={destinationId} | ServerRevision={destination.DataRevision} | ExpectedRevision={expectedRevision} | Owner={sender}");
+
+			if (destination.DataRevision >= expectedRevision)
+			{
+				TryAcquireDestinationOwnership(sourceId, destination, sender, expectedRevision, playerId);
+				return;
+			}
+
+			if (ZNetScene.instance == null)
+				return;
+
+			ZNetScene.instance.StartCoroutine(WaitForDestinationHandoff(sourceId, destinationId, sender, expectedRevision, playerId));
+		}
+
+		private static void RPC_RequestDestinationAccess(long sender, ZDOID sourceId, ZDOID destinationId, long playerId)
+		{
+			if (ZNet.instance == null || ZNet.instance.IsServer() || ZDOMan.instance == null || ZRoutedRpc.instance == null)
+				return;
+
+			long localPlayerId = Game.instance?.GetPlayerProfile()?.GetPlayerID() ?? 0L;
+
+			if (localPlayerId != playerId)
+			{
+				log.Warn($"Ward access check rejected because player ID does not match | Expected={playerId} | Local={localPlayerId}");
+				return;
+			}
+
+			ZDO destination = ZDOMan.instance.GetZDO(destinationId);
+			if (destination == null)
+				return;
+
+			bool allowed = PrivateArea.CheckAccess(destination.GetPosition(), 0f, flash: false);
+
+			log.Info($"Ward access checked | Destination={destinationId} | PlayerID={playerId} | Allowed={allowed}");
+
+			ZRoutedRpc.instance.InvokeRoutedRPC(sender, DestinationAccessResponseRpcName, sourceId, destinationId, allowed, playerId);
+		}
+
+		private static void RPC_DestinationAccessResponse(long sender, ZDOID sourceId, ZDOID destinationId, bool allowed, long playerId)
+		{
+			if (ZNet.instance == null || !ZNet.instance.IsServer() || ZDOMan.instance == null)
+				return;
+
+			if (!activeDistributions.TryGetValue(sourceId, out DistributionTransaction transaction))
+				return;
+
+			if (sender != transaction.DepositingPeer || playerId != transaction.PlayerId)
+			{
+				log.Warn($"Destination access response rejected | Source={sourceId} | Sender={sender}");
+				return;
+			}
+
+			ZDO source = ZDOMan.instance.GetZDO(sourceId);
+			ZDO destination = ZDOMan.instance.GetZDO(destinationId);
+
+			if (source == null || destination == null)
+				return;
+
+			if (source.GetPrefab() != SmartDropboxPrefabHash)
+				return;
+
+			if (!SupportedStoragePrefabs.Contains(destination.GetPrefab()))
+				return;
+
+			if (!allowed)
+			{
+				log.Info($"Destination skipped: ward denied access | Destination={destinationId} | PlayerID={playerId}");
+				AdvanceDistribution(sourceId);
+				return;
+			}
+
+			if (!CheckDestinationPrivacy(destination, playerId))
+			{
+				log.Info($"Destination skipped: container privacy changed during access check | Destination={destinationId} | PlayerID={playerId}");
+				AdvanceDistribution(sourceId);
+				return;
+			}
+
+			log.Info($"Destination access granted | Destination={destinationId} | PlayerID={playerId}");
+
+			RequestDestinationHandoff(source, destination, playerId);
+		}
+
+		private static IEnumerator WaitForDestinationHandoff(ZDOID sourceId, ZDOID destinationId, long expectedOwner, uint expectedRevision, long playerId)
+		{
+			float startTime = Time.realtimeSinceStartup;
+
+			while (Time.realtimeSinceStartup - startTime < HandoffTimeoutSeconds)
+			{
+				if (ZDOMan.instance == null)
+					yield break;
+
+				ZDO destination = ZDOMan.instance.GetZDO(destinationId);
+				if (destination == null)
+					yield break;
+
+				if (destination.GetOwner() != expectedOwner)
+				{
+					log.Info($"Destination ownership changed while synchronizing | Destination={destinationId} | ExpectedOwner={expectedOwner} | Owner={destination.GetOwner()}");
+					yield break;
+				}
+
+				if (destination.DataRevision >= expectedRevision)
+				{
+					TryAcquireDestinationOwnership(sourceId, destination, expectedOwner, expectedRevision, playerId);
+					yield break;
+				}
+
+				yield return new WaitForSecondsRealtime(0.05f);
+			}
+
+			log.Warn($"Timed out waiting for destination synchronization | Destination={destinationId} | ExpectedRevision={expectedRevision}");
+		}
+
+		private static void TryAcquireDestinationOwnership(ZDOID sourceId, ZDO destination, long expectedOwner, uint expectedRevision, long playerId)
+		{
+			if (destination == null || ZDOMan.instance == null)
+				return;
+
+			if (destination.DataRevision < expectedRevision)
+				return;
+
+			if (destination.GetOwner() != expectedOwner)
+			{
+				log.Info($"Destination ownership changed before acquisition | Destination={destination.m_uid} | ExpectedOwner={expectedOwner} | Owner={destination.GetOwner()}");
+				return;
+			}
+
+			if (destination.GetInt(ZDOVars.s_inUse) == 1)
+			{
+				log.Info($"Destination acquisition cancelled because container is in use | Destination={destination.m_uid}");
+				return;
+			}
+
+			long serverId = ZDOMan.GetSessionID();
+
+			destination.SetOwner(serverId);
+
+			log.Info($"Destination ownership acquired | Source={sourceId} | Destination={destination.m_uid} | Revision={destination.DataRevision} | Owner={destination.GetOwner()} | PlayerID={playerId}");
+
+			ZDOMan.instance.ForceSendZDO(destination.m_uid);
+
+			destination.SetOwner(expectedOwner);
+
+			ZDOMan.instance.ForceSendZDO(destination.m_uid);
+
+			log.Info($"Destination ownership returned | Destination={destination.m_uid} | Owner={destination.GetOwner()}");
+
+			AdvanceDistribution(sourceId);
+		}
+
 		private static void LogDestinationMatches(ZDO source)
 		{
 			if (!TryReadInventory(source, out Inventory sourceInventory))
@@ -699,6 +1100,42 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 				log.Info($"Item match summary | Item={itemName} | SourceAmount={sourceItem.m_stack} | MatchingDestinations={matchingDestinations}");
 			}
+		}
+
+		private static bool CheckDestinationPrivacy(ZDO destination, long playerId)
+		{
+			if (destination == null || ZNetScene.instance == null)
+				return false;
+
+			GameObject prefab = ZNetScene.instance.GetPrefab(destination.GetPrefab());
+			Container container = prefab?.GetComponent<Container>();
+
+			if (container == null)
+				return false;
+
+			switch (container.m_privacy)
+			{
+				case Container.PrivacySetting.Public:
+					return true;
+
+				case Container.PrivacySetting.Private:
+					return destination.GetLong(ZDOVars.s_creator, 0L) == playerId;
+
+				case Container.PrivacySetting.Group:
+				default:
+					return false;
+			}
+		}
+
+		private static bool DestinationUsesWardCheck(ZDO destination)
+		{
+			if (destination == null || ZNetScene.instance == null)
+				return false;
+
+			GameObject prefab = ZNetScene.instance.GetPrefab(destination.GetPrefab());
+			Container container = prefab?.GetComponent<Container>();
+
+			return container != null && container.m_checkGuardStone;
 		}
 	}
 

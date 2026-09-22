@@ -20,6 +20,14 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 		private static ZRoutedRpc registeredRoutedRpc;
 		private static readonly int SmartDropboxPrefabHash = "smart_dropbox".GetStableHashCode();
 
+		private static readonly HashSet<int> SupportedStoragePrefabs = new HashSet<int>
+		{
+			"piece_chest_wood".GetStableHashCode(),
+			"piece_chest".GetStableHashCode(),
+			"piece_chest_blackmetal".GetStableHashCode(),
+			"piece_chest_private".GetStableHashCode()
+		};
+
 		internal static float SearchRadius => ConfigManager.SmartDropboxRadius.Value;
 
 		[HarmonyPatch(typeof(ZNetScene), "Awake")]
@@ -413,6 +421,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			log.Info($"Server ownership acquired | ZDO={zdo.m_uid} | Persistent={zdo.Persistent} | Revision={zdo.DataRevision} | ExpectedRevision={expectedRevision} | Owner={zdo.GetOwner()}");
 
 			LogServerSourceInventory(zdo);
+			LogDestinationCandidates(zdo);
 		}
 
 		private static IEnumerator WaitForServerHandoff(long sender, ZDOID zdoId, uint expectedRevision)
@@ -519,6 +528,75 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				return container.m_rootObjectOverride.GetComponent<ZNetView>();
 
 			return container.GetComponent<ZNetView>();
+		}
+
+		private static List<ZDO> FindDestinationCandidates(ZDO source)
+		{
+			List<ZDO> result = new List<ZDO>();
+
+			if (source == null || ZDOMan.instance == null || ZNetScene.instance == null)
+				return result;
+
+			Vector3 sourcePosition = source.GetPosition();
+			Vector2s sourceSector = ZoneSystem.GetZone(sourcePosition);
+
+			int sectorRange = Mathf.Max(1, Mathf.CeilToInt(SearchRadius / ZoneSystem.c_ZoneSize));
+
+			List<ZDO> nearby = new List<ZDO>();
+			SimulationDistance simulationDistance = new SimulationDistance(sectorRange, 0, classic: true);
+
+			ZDOMan.instance.FindSectorObjects(sourceSector, simulationDistance, nearby);
+
+			float radiusSquared = SearchRadius * SearchRadius;
+
+			foreach (ZDO candidate in nearby)
+			{
+				if (candidate == null || candidate.m_uid == source.m_uid)
+					continue;
+
+				if (!SupportedStoragePrefabs.Contains(candidate.GetPrefab()))
+					continue;
+
+				Vector3 offset = candidate.GetPosition() - sourcePosition;
+
+				if (offset.sqrMagnitude > radiusSquared)
+					continue;
+
+				GameObject prefab = ZNetScene.instance.GetPrefab(candidate.GetPrefab());
+				if (prefab == null || prefab.GetComponent<Container>() == null)
+					continue;
+
+				result.Add(candidate);
+			}
+
+			result.Sort((a, b) =>
+			{
+				float distanceA = (a.GetPosition() - sourcePosition).sqrMagnitude;
+				float distanceB = (b.GetPosition() - sourcePosition).sqrMagnitude;
+
+				return distanceA.CompareTo(distanceB);
+			});
+
+			return result;
+		}
+
+		private static void LogDestinationCandidates(ZDO source)
+		{
+			List<ZDO> candidates = FindDestinationCandidates(source);
+
+			log.Info($"Destination discovery | Source={source.m_uid} | Radius={SearchRadius:0}m | Candidates={candidates.Count}");
+
+			foreach (ZDO candidate in candidates)
+			{
+				GameObject prefab = ZNetScene.instance.GetPrefab(candidate.GetPrefab());
+				string prefabName = prefab != null ? prefab.name : candidate.GetPrefab().ToString();
+
+				float distance = Vector3.Distance(source.GetPosition(), candidate.GetPosition());
+				byte[] itemData = candidate.GetByteArray(ZDOVars.s_items);
+				bool inUse = candidate.GetInt(ZDOVars.s_inUse) == 1;
+
+				log.Info($"Destination candidate | ZDO={candidate.m_uid} | Prefab={prefabName} | Distance={distance:0.0}m | Owner={candidate.GetOwner()} | InUse={inUse} | ItemDataLength={itemData?.Length ?? 0}");
+			}
 		}
 	}
 

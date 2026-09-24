@@ -71,8 +71,6 @@ Features can be enabled or disabled individually, and configurable values such a
 
 Most settings can be changed during gameplay. Close and reopen the relevant build/crafting menu when needed for menu changes to refresh.
 
----
-
 
 ---
 
@@ -85,7 +83,7 @@ https://paypal.me/Marsarah9
 
 ## <strong> ⚡ Main Features </strong>
 
-<strong>🔧 Smart Dropbox</strong>
+### <strong>🔧 Smart Dropbox</strong>
 A functional storage piece designed to make putting away gathered materials faster. Unlocked in the Swamp and also requires a Thunderstone.
 
 - Automatically distributes deposited items when the Smart Dropbox is closed.
@@ -93,7 +91,7 @@ A functional storage piece designed to make putting away gathered materials fast
 - Eligible containers are checked from nearest to farthest.
 - Items that cannot be moved remain inside the Smart Dropbox.
 - Build cost: **10 Fine Wood, 2 Iron, 1 Thunderstone**.
-- Default search radius: **20 meters[/b]. Configurable from [b]5 to 50 meters**.
+- Default search radius: **20 meters**. Configurable from **5 to 50 meters**.
 - Respects Ward/access restrictions.
 - Supports local worlds, multiplayer and dedicated servers.
 - If the feature is disabled, already placed Smart Dropboxes remain usable as normal storage and their special visual effect is disabled.
@@ -192,7 +190,7 @@ Wall Lantern cost: 2 Copper, 1 Lantern, 1 Chain.
 Pole Lantern cost: 3 Copper, 1 Lantern, 1 Chain.
 
 
-<strong>🔧 Small Sign</strong>
+### <strong>🔧 Small Sign</strong>
 
 A smaller version of the normal wooden sign for places where the vanilla sign feels oversized.
 

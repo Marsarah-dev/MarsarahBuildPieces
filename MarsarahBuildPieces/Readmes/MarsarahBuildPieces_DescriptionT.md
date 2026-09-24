@@ -1,6 +1,6 @@
 # <strong> Marsarah Build Pieces </strong>
 
-**Version:** 1.0.1  
+**Version:** 1.1.0  
 **Author:** Marsarah
 
 ---
@@ -9,7 +9,7 @@
 
 Marsarah Build Pieces is a standalone collection of custom buildable pieces for Valheim, focused mainly on **functional pieces, portals and new light sources** rather than large sets of architectural walls and floors.
 
-The mod began as the custom build-piece section of **Marsarah Tweaks** and has now been separated into its own mod. It currently adds **14 buildable pieces** plus the craftable **Portal Core** item, including the Pocket Portal, Glacial Stone Portal, Mystical Light Ward, Silver light sources, a Green Standing Brazier and colored Dvergr Lanterns.
+The mod began as the custom build-piece section of Marsarah Tweaks and has now been separated into its own mod. It currently adds 16 buildable pieces plus the craftable Portal Core item, including the Pocket Portal, Glacial Stone Portal, Mystical Light Ward, Smart Dropbox, Small Sign, Silver light sources, a Green Standing Brazier and colored Dvergr Lanterns.
 
 All feature configs are synchronized using **ServerSync**, and the mod includes optional compatibility with MarsarahTweaks when both are installed.
 
@@ -68,11 +68,14 @@ A config file is generated on first launch:
 All BuildPieces settings are synchronized with the server. The configuration can also be locked so only server administrators can change synchronized values.
 
 Main settings:
+- **Smart Dropbox**
+- **Smart Dropbox Radius:** 5-50 meters, default **20m**
 - **Pocket Portal**
 - **Glacial Stone Portal**
 - **Extra Lights**
 - **Mystical Light Ward**
 - **Mystical Light Ward Radius:** 5-50 meters, default **32m**
+- **Small Sign**
 
 Feature toggles can be changed during gameplay. Close and reopen the relevant build/crafting menu when needed for the menu to refresh.
 
@@ -86,6 +89,21 @@ https://paypal.me/Marsarah9
 ---
 
 ## <strong> ⚡ Main Features </strong>
+
+<strong>🔧 Smart Dropbox</strong>
+A functional storage piece designed to make putting away gathered materials faster. Unlocked in the Swamp and also requires a Thunderstone.
+
+- Automatically distributes deposited items when the Smart Dropbox is closed.
+- Items are only moved to nearby supported storage that already contains the same item type.
+- Eligible containers are checked from nearest to farthest.
+- Items that cannot be moved remain inside the Smart Dropbox.
+- Build cost: [b]10 Fine Wood, 2 Iron, 1 Thunderstone[/b].
+- Default search radius: [b]20 meters[/b]. Configurable from [b]5 to 50 meters[/b].
+- Respects Ward/access restrictions.
+- Supports local worlds, multiplayer and dedicated servers.
+- If the feature is disabled, already placed Smart Dropboxes remain usable as normal storage and their special visual effect is disabled.
+
+- **Conflicts:** Smart Dropbox is automatically disabled if MultiUserChest is detected. The two features are incompatible and using them together can cause inventory desynchronization or item loss.
 
 ### <strong>🔧 Pocket Portal</strong>
 
@@ -178,6 +196,17 @@ Requires a **Black Forge**.
 Wall Lantern cost: 2 Copper, 1 Lantern, 1 Chain.  
 Pole Lantern cost: 3 Copper, 1 Lantern, 1 Chain.
 
+
+<strong>🔧 Small Sign</strong>
+
+A smaller version of the normal wooden sign for places where the vanilla sign feels oversized.
+
+- Uses the normal sign functionality at approximately 75% of its original size.
+- Build cost:
+  - 1 Wood
+  - 1 Coal
+- Can be enabled or disabled independently through the configuration. Already placed small signs will still persist in the world, but new ones cannot be built if the config is off. 
+
 ---
 
 ## <strong> 🔗 MarsarahTweaks Compatibility </strong>
@@ -209,8 +238,6 @@ The Glacial Stone Portal is recognized by Tweaks' **Max Portals Per Player** fea
 ---
 
 ## <strong> 🔮 Future Plans </strong>
-
-A planned future feature is the **Smart Dropbox**: a functional container that automatically distributes deposited items into nearby containers that already contain the same item/type.
 
 Deep North build pieces and other relevant content will be reviewed after I have completed the biome myself.
 

@@ -1,15 +1,17 @@
-Marsarah Build Pieces v1.0.1
+Marsarah Build Pieces v1.1.0
 ================================================================
 Marsarah Build Pieces is a standalone collection of custom buildable pieces for Valheim, focused mainly on functional pieces, portals and light sources rather than large sets of architectural walls and floors.
 
 The mod began as the custom build-piece section of Marsarah Tweaks and has now been separated into its own mod.
 
 CURRENT CONTENT:
-- 14 custom buildable pieces
+- 16 custom buildable pieces
 - 1 custom craftable item (Portal Core)
 - Pocket Portal
 - Glacial Stone Portal
 - Mystical Light Ward
+- Smart Dropbox
+- Small Sign
 - 11 additional light-source pieces
 
 All feature configs are synchronized using ServerSync.
@@ -77,44 +79,47 @@ Valheim/BepInEx/config/Marsarah.MarsarahBuildPieces.cfg
 
 All Build Pieces settings are synchronized with the server.
 
-1 - Main
-----------------------------------------------------------------
-Lock Configuration
-  Default: Enabled
-  If enabled, only server administrators can change synchronized configuration values.
-
-2 - Build Pieces (Synced with Server)
-----------------------------------------------------------------
-01 - Pocket Portal
-  Default: Enabled
-  Controls both the Portal Core crafting recipe and Pocket Portal build-menu availability.
-
-02 - Glacial Stone Portal
-  Default: Enabled
-  Controls Glacial Stone Portal build-menu availability.
-
-03 - Extra Lights
-  Default: Enabled
-  Controls all 11 custom light-source pieces together.
-
-04 - Mystical Light Ward
-  Default: Enabled
-  Controls the Mystical Light Ward build-menu availability and active Ward effects.
-  Existing placed Wards remain in the world if disabled, but become dormant.
-
-05 - Mystical Light Ward Radius
-  Default: 32 meters
-  Minimum: 5 meters
-  Maximum: 50 meters
-  Can be changed during gameplay and updates the placement radius/effect radius.
-
-MID-GAME TOGGLING
-----------------------------------------------------------------
-Feature toggles are applied during gameplay. Close and reopen the relevant build/crafting menu when needed for the menu contents to refresh.
-
-
 BUILD PIECES
 ================================================================
+
+======================== [SMART DROPBOX] =======================
+
+► Description:
+A functional storage piece that distributes deposited items to nearby supported storage after the Smart Dropbox is closed.
+
+Items are only moved to containers that already contain the same item type, allowing the Dropbox to follow the storage organization you have already created instead of deciding where items belong itself.
+
+► Build Category:
+Furniture
+
+► Build Cost:
+Fine Wood: 10
+Iron: 2
+Thunderstone: 1
+
+► Search Radius:
+Default: 20 meters
+Configurable: 5-50 meters
+
+The radius circle is visible while positioning the placement ghost and is hidden after placement.
+
+► Distribution Behavior:
+Nearby supported storage is checked from nearest to farthest.
+Only containers already containing a deposited item type are eligible for that item.
+Items that cannot be transferred remain inside the Smart Dropbox.
+Ward/access restrictions are respected.
+
+► Multiplayer:
+Smart Dropbox supports local worlds, multiplayer and dedicated servers.
+
+► Disabled State:
+Existing placed Smart Dropboxes remain in the world and can still be used as normal storage.
+Automatic distribution stops.
+The Smart Dropbox's special visual effect is disabled.
+
+► Compatibility:
+Smart Dropbox is automatically disabled when MultiUserChest is detected. The two systems modify container access in incompatible ways and using them together can cause inventory desynchronization or item loss.
+
 
 ======================== [POCKET PORTAL] =======================
 
@@ -373,6 +378,22 @@ Four colored Dvergr Lantern variants are included:
     Flicker is also reduced/slowed to match the brighter-light behavior.
 
 
+========================== [SMALL SIGN] =========================
+
+► Description:
+A smaller version of the normal wooden sign for places where the vanilla sign is a bit too large.
+
+► Build Category:
+Furniture
+
+► Size:
+Approximately 75% of the normal wooden sign.
+
+► Build Cost:
+Wood: 1
+Coal: 1
+
+
 MARSARAHTWEAKS COMPATIBILITY SUMMARY
 ================================================================
 MarsarahTweaks is optional. Marsarah Build Pieces works without it.
@@ -408,11 +429,6 @@ Tweaks recognizes the Glacial Stone Portal and can enforce its configured per-pl
 
 FUTURE PLANS
 ================================================================
-SMART DROPBOX
-----------------------------------------------------------------
-Planned functional container concept:
-- Items deposited inside are automatically moved to nearby containers.
-- An item should only be moved to a destination container that already contains that item/type.
 
 DEEP NORTH
 ----------------------------------------------------------------
@@ -436,8 +452,15 @@ Blaxxun-bloop - ServerSync
 VERSION HISTORY
 ================================================================
 
-v1.0.1
-- Reorganized configuration entries to remove numbered setting names and use Configuration Manager ordering instead.
+v1.1.0
+- General:
+  - Reorganized configuration entries to remove numbered setting names and use Configuration Manager ordering instead.
+- Smart Dropbox:
+  - Added a new functional storage piece that distributes deposited items to nearby supported storage containing the same item type.
+- Small Sign:
+  - Added a smaller version of the vanilla wooden sign.
+- Mystical Light Ward:
+  - Recolored the Mystical Light Ward icon.
 
 v1.0.0
 - Initial standalone release.

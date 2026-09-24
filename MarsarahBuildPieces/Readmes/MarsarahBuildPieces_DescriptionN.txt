@@ -1,6 +1,6 @@
 [size=5][b]Marsarah Build Pieces[/b][/size]
 
-[b]Version:[/b] 1.0.1
+[b]Version:[/b] 1.1.0
 [b]Author:[/b] Marsarah
 
 [line]
@@ -9,7 +9,7 @@
 
 Marsarah Build Pieces is a standalone collection of custom buildable pieces for Valheim, focused mainly on [b]functional pieces, portals and new light sources[/b] rather than large sets of architectural walls and floors.
 
-The mod began as the custom build-piece section of [b]Marsarah Tweaks[/b] and has now been separated into its own mod. It currently adds [b]14 buildable pieces[/b] plus the craftable [b]Portal Core[/b] item, including the Pocket Portal, Glacial Stone Portal, Mystical Light Ward, Silver light sources, a Green Standing Brazier and colored Dvergr Lanterns.
+The mod began as the custom build-piece section of [b]Marsarah Tweaks[/b] and has now been separated into its own mod. It currently adds [b]16 buildable pieces[/b] plus the craftable [b]Portal Core[/b] item, including the Pocket Portal, Glacial Stone Portal, Mystical Light Ward, Smart Dropbox, Small Sign, Silver light sources, a Green Standing Brazier and colored Dvergr Lanterns.
 
 All feature configs are synchronized using [b]ServerSync[/b], and the mod includes optional compatibility with MarsarahTweaks when both are installed.
 
@@ -67,11 +67,14 @@ A config file is generated on first launch:
 All BuildPieces settings are synchronized with the server. The configuration can be locked so only server administrators can change synchronized values.
 
 [b]Main settings:[/b]
+- Smart Dropbox
+- Smart Dropbox Radius: 5-50 meters, default [b]20m[/b]
 - Pocket Portal
 - Glacial Stone Portal
 - Extra Lights
 - Mystical Light Ward
 - Mystical Light Ward Radius: 5-50 meters, default [b]32m[/b]
+- Small Sign
 
 Feature toggles can be changed during gameplay. Close and reopen the relevant build/crafting menu when needed for the menu to refresh.
 
@@ -84,6 +87,22 @@ My mods are and will always be free to use. If you'd like to support my work, yo
 [line]
 
 [size=5][b]⚡ Main Features[/b][/size]
+
+[size=4][b]🔧 Smart Dropbox[/b][/size]
+A functional storage piece designed to make putting away gathered materials faster. Unlocked in the Swamp and also requires a Thunderstone.
+
+- Automatically distributes deposited items when the Smart Dropbox is closed.
+- Items are only moved to nearby supported storage that already contains the same item type.
+- Eligible containers are checked from nearest to farthest.
+- Items that cannot be moved remain inside the Smart Dropbox.
+- Build cost: [b]10 Fine Wood, 2 Iron, 1 Thunderstone[/b].
+- Default search radius: [b]20 meters[/b]. Configurable from [b]5 to 50 meters[/b].
+- Respects Ward/access restrictions.
+- Supports local worlds, multiplayer and dedicated servers.
+- If the feature is disabled, already placed Smart Dropboxes remain usable as normal storage and their special visual effect is disabled.
+
+Compatibility:
+- [b]Smart Dropbox is automatically disabled if MultiUserChest is detected.[/b] The two features are incompatible and using them together can cause inventory desynchronization or item loss.
 
 [size=4][b]🔧 Pocket Portal[/b][/size]
 A portable portal designed to make exploration more convenient.
@@ -145,6 +164,13 @@ Adds [b]11 light-source build pieces[/b] across Mountain and Mistlands progressi
 - Wall cost: 2 Copper, 1 Lantern, 1 Chain.
 - Pole cost: 3 Copper, 1 Lantern, 1 Chain.
 
+[size=4][b]🔧 Small Sign[/b][/size]
+Adds a smaller version of the normal wooden sign for places where the vanilla sign feels oversized.
+
+- Uses the normal sign functionality at approximately [b]75% of its original size[/b].
+- Build cost: [b]1 Wood, 1 Coal[/b].
+- Can be enabled or disabled independently through the configuration. Already placed small signs will still persist in the world, but new ones cannot be built if the config is off. 
+
 [line]
 
 [size=5][b]🔗 MarsarahTweaks Compatibility[/b][/size]
@@ -174,8 +200,6 @@ MarsarahTweaks is an [b]optional soft dependency[/b]. BuildPieces works normally
 
 [size=5][b]🔮 Future Plans[/b][/size]
 
-A planned future feature is the [b]Smart Dropbox[/b]: a functional container that automatically distributes deposited items into nearby containers that already contain the same item/type.
-
 Deep North build pieces and other relevant content will be reviewed after I have completed the biome myself.
 
 The above plans may change as development continues.
@@ -192,8 +216,11 @@ Thanks for checking out Marsarah Build Pieces!
 
 [size=5][b]📜 Version History[/b][/size]
 
-[size=4][b]v1.0.1[/b][/size]
+[size=4][b]v1.1.0[/b][/size]
 - Reorganized configuration entries to remove numbered setting names and use Configuration Manager ordering instead.
+- Added Smart Dropbox
+- Adde Small Sign
+- Recolored the Mystical Light Ward icon.
 
 [size=4][b]v1.0.0[/b][/size]
 - [b]Initial standalone release.[/b]

@@ -1,7 +1,14 @@
 ## <strong> 📜 Version History </strong>
 
-v1.0.1
-- Reorganized configuration entries to remove numbered setting names and use Configuration Manager ordering instead.
+v1.1.0
+- **General:** 
+  - Reorganized configuration entries to remove numbered setting names and use Configuration Manager ordering instead.
+- **Smart Dropbox:**
+  - Added a new functional storage piece that distributes deposited items to nearby supported storage containing the same item type.
+- **Small Sign:**
+  - Added a smaller version of the vanilla wooden sign.
+- **Mystical Light Ward:**
+  - Recolored the Mystical Light Ward icon.
 
 v1.0.0
 - **Initial standalone release.**

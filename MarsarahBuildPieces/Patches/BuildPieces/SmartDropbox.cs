@@ -9,7 +9,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 {
 	internal static class SmartDropbox
 	{
-		private static readonly LogManager log = new LogManager("Smart Dropbox", LogManager.LogLevel.Info);
+		private static readonly LogManager log = new LogManager("Smart Dropbox", LogManager.LogLevel.Warning);
 
 		private static bool initialized;
 		private static GameObject SmartDropboxPrefab;

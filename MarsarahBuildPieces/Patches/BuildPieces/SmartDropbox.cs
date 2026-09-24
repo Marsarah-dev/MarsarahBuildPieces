@@ -25,8 +25,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 		private static ZRoutedRpc registeredRoutedRpc;
 		private static readonly int SmartDropboxPrefabHash = "smart_dropbox".GetStableHashCode();
 
-		private const string MultiUserChestIgnoreKey = "MUC_Ignore";
-
 		private static readonly HashSet<int> SupportedStoragePrefabs = new HashSet<int>
 		{
 			"piece_chest_wood".GetStableHashCode(),
@@ -43,26 +41,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			internal int Index;
 			internal int TotalMoved;
 			internal int ContainersUsed;
-		}
-
-		internal static bool ApplyMultiUserChestIgnoreFlag(ZNetView nview)
-		{
-			if (nview == null || !nview.IsValid() || !nview.IsOwner())
-				return false;
-
-			ZDO zdo = nview.GetZDO();
-			if (zdo == null)
-				return false;
-
-			if (!zdo.GetBool(MultiUserChestIgnoreKey))
-			{
-				zdo.Set(MultiUserChestIgnoreKey, true);
-				ZDOMan.instance?.ForceSendZDO(zdo.m_uid);
-
-				log.Info($"Applied MultiUserChest ignore flag | ZDO={zdo.m_uid}");
-			}
-
-			return true;
 		}
 
 		private static readonly Dictionary<ZDOID, DistributionTransaction> activeDistributions = new Dictionary<ZDOID, DistributionTransaction>();
@@ -1207,8 +1185,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 		{
 			nview = SmartDropbox.GetContainerZNetView(GetComponent<Container>());
 
-			StartCoroutine(ApplyMultiUserChestIgnoreFlag());
-
 			SmartDropbox.HideRadiusMarker(gameObject);
 			SmartDropbox.RegisterDropbox(this);
 		}
@@ -1224,19 +1200,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				nview = SmartDropbox.GetContainerZNetView(GetComponent<Container>());
 
 			SmartDropbox.RequestServerHandoff(nview);
-		}
-
-		private IEnumerator ApplyMultiUserChestIgnoreFlag()
-		{
-			float startTime = Time.realtimeSinceStartup;
-
-			while (Time.realtimeSinceStartup - startTime < 5f)
-			{
-				if (SmartDropbox.ApplyMultiUserChestIgnoreFlag(nview))
-					yield break;
-
-				yield return new WaitForSecondsRealtime(0.1f);
-			}
 		}
 	}
 }

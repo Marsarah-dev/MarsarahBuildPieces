@@ -20,13 +20,18 @@ namespace MarsarahBuildPieces
 		private void Awake()
 		{
 			LogManager.SetGlobalLogLevel(LogManager.LogLevel.Info);
-			
+
 			ConfigManager.Init(Config);
-			CompatibilityManager.Initialize();
 
 			log.Info($"{ModName} {ModVersion} loaded.");
 
 			harmony.PatchAll();
+		}
+
+		private void Start()
+		{
+			CompatibilityManager.Initialize();
+			CompatibilityManager.UpdateIncompatibilities();
 		}
 
 		private void OnDestroy()

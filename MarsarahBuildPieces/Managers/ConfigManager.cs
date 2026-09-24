@@ -190,6 +190,8 @@ namespace MarsarahBuildPieces.Managers
 
 			Config.Save();
 
+			CompatibilityManager.UpdateIncompatibilities();
+
 			if (ObjectDB.instance == null || ZNetScene.instance == null || ZNet.instance == null)
 				return;
 

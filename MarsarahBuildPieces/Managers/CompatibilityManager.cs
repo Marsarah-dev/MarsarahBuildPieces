@@ -1,6 +1,7 @@
 ﻿using BepInEx.Bootstrap;
 using BepInEx.Configuration;
 using MarsarahBuildPieces.Patches.BuildPieces;
+using System.Collections.Generic;
 
 namespace MarsarahBuildPieces.Managers
 {
@@ -20,7 +21,37 @@ namespace MarsarahBuildPieces.Managers
 		public static bool PermanentLightsEnabled => TweaksLoaded && tweaksPermanentLights?.Value == true;
 		public static bool BrighterLanternsEnabled => TweaksLoaded && tweaksBrighterLanterns?.Value == true;
 
+		private static readonly Dictionary<string, string> LoadedMods = new Dictionary<string, string>();
+
+		public struct ConflictMod
+		{
+			public string Guid;
+			public string Name;
+			public bool Loaded;
+
+			public ConflictMod(string guid)
+			{
+				Guid = guid;
+				Name = null;
+				Loaded = false;
+			}
+		}
+
+		public static ConflictMod MultiUserChest = new ConflictMod("com.maxsch.valheim.MultiUserChest");
+
 		public static void Initialize()
+		{
+			LoadedMods.Clear();
+
+			foreach (var plugin in Chainloader.PluginInfos.Values)
+				LoadedMods[plugin.Metadata.GUID] = plugin.Metadata.Name;
+
+			UpdateConflictMod(ref MultiUserChest);
+
+			InitializeMarsarahTweaksCompatibility();
+		}
+
+		private static void InitializeMarsarahTweaksCompatibility()
 		{
 			if (!Chainloader.PluginInfos.TryGetValue(TweaksGuid, out var pluginInfo) || pluginInfo.Instance == null)
 				return;
@@ -114,6 +145,60 @@ namespace MarsarahBuildPieces.Managers
 			log.Warn("Mystical Light Ward enabled. Disabling MarsarahTweaks Permanent Lights.");
 
 			tweaksPermanentLights.Value = false;
+		}
+
+		private static void UpdateConflictMod(ref ConflictMod mod)
+		{
+			if (LoadedMods.TryGetValue(mod.Guid, out var name))
+			{
+				mod.Name = name;
+				mod.Loaded = true;
+				log.Info($"{name} detected (GUID: {mod.Guid})");
+			}
+			else
+			{
+				mod.Name = mod.Guid;
+				mod.Loaded = false;
+			}
+		}
+
+		public static void SetIfIncompatible<T>(ConflictMod mod, ConfigEntry<T> config, T forcedValue, string actionDescription, string additionalReason = "")
+		{
+			if (!mod.Loaded)
+				return;
+
+			if (EqualityComparer<T>.Default.Equals(config.Value, forcedValue))
+				return;
+
+			string before = config.Value?.ToString() ?? "null";
+			string after = forcedValue?.ToString() ?? "null";
+
+			log.Warn(
+				$"{actionDescription} '{config.Definition.Key}' because '{mod.Name}' mod is loaded. " +
+				$"(was: {before}, now: {after}) {additionalReason}"
+			);
+
+			config.Value = forcedValue;
+		}
+
+		public static void DisableIfIncompatible(ConflictMod mod, ConfigEntry<bool> config, string additionalReason = "")
+		{
+			SetIfIncompatible(
+				mod,
+				config,
+				false,
+				"Automatically disabling",
+				additionalReason
+			);
+		}
+
+		public static void UpdateIncompatibilities()
+		{
+			DisableIfIncompatible(
+				MultiUserChest,
+				ConfigManager.SmartDropboxEnabled,
+				"Smart Dropbox is incompatible with MultiUserChest and can cause inventory desynchronization or item loss."
+			);
 		}
 	}
 }

@@ -1185,6 +1185,9 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 		{
 			nview = SmartDropbox.GetContainerZNetView(GetComponent<Container>());
 
+			if (nview == null || nview.GetZDO() == null)
+				return;
+
 			SmartDropbox.HideRadiusMarker(gameObject);
 			SmartDropbox.RegisterDropbox(this);
 		}

@@ -62,22 +62,17 @@ Make sure **Jotunn** is also installed.
 
 ## <strong> ⚙️ Configuration </strong>
 
-A config file is generated on first launch:  
+A config file is generated on first launch:
 `Valheim/BepInEx/config/Marsarah.MarsarahBuildPieces.cfg`
 
-All BuildPieces settings are synchronized with the server. The configuration can also be locked so only server administrators can change synchronized values.
+All BuildPieces settings are synchronized with the server using **ServerSync**. The configuration can be locked so only server administrators can change synchronized values.
 
-Main settings:
-- **Smart Dropbox**
-- **Smart Dropbox Radius:** 5-50 meters, default **20m**
-- **Pocket Portal**
-- **Glacial Stone Portal**
-- **Extra Lights**
-- **Mystical Light Ward**
-- **Mystical Light Ward Radius:** 5-50 meters, default **32m**
-- **Small Sign**
+Features can be enabled or disabled individually, and configurable values such as the Smart Dropbox and Mystical Light Ward radii can be adjusted through the config file or a compatible configuration manager.
 
-Feature toggles can be changed during gameplay. Close and reopen the relevant build/crafting menu when needed for the menu to refresh.
+Most settings can be changed during gameplay. Close and reopen the relevant build/crafting menu when needed for menu changes to refresh.
+
+---
+
 
 ---
 
@@ -97,8 +92,8 @@ A functional storage piece designed to make putting away gathered materials fast
 - Items are only moved to nearby supported storage that already contains the same item type.
 - Eligible containers are checked from nearest to farthest.
 - Items that cannot be moved remain inside the Smart Dropbox.
-- Build cost: [b]10 Fine Wood, 2 Iron, 1 Thunderstone[/b].
-- Default search radius: [b]20 meters[/b]. Configurable from [b]5 to 50 meters[/b].
+- Build cost: **10 Fine Wood, 2 Iron, 1 Thunderstone**.
+- Default search radius: **20 meters[/b]. Configurable from [b]5 to 50 meters**.
 - Respects Ward/access restrictions.
 - Supports local worlds, multiplayer and dedicated servers.
 - If the feature is disabled, already placed Smart Dropboxes remain usable as normal storage and their special visual effect is disabled.

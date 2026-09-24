@@ -64,21 +64,14 @@ Or use a mod manager.
 A config file is generated on first launch:
 [i]Valheim/BepInEx/config/Marsarah.MarsarahBuildPieces.cfg[/i]
 
-All BuildPieces settings are synchronized with the server. The configuration can be locked so only server administrators can change synchronized values.
+All BuildPieces settings are synchronized with the server using [b]ServerSync[/b]. The configuration can be locked so only server administrators can change synchronized values.
 
-[b]Main settings:[/b]
-- Smart Dropbox
-- Smart Dropbox Radius: 5-50 meters, default [b]20m[/b]
-- Pocket Portal
-- Glacial Stone Portal
-- Extra Lights
-- Mystical Light Ward
-- Mystical Light Ward Radius: 5-50 meters, default [b]32m[/b]
-- Small Sign
+Features can be enabled or disabled individually, and configurable values such as the Smart Dropbox and Mystical Light Ward radii can be adjusted through the config file or a compatible configuration manager.
 
-Feature toggles can be changed during gameplay. Close and reopen the relevant build/crafting menu when needed for the menu to refresh.
+Most settings can be changed during gameplay. Close and reopen the relevant build/crafting menu when needed for menu changes to refresh.
 
 [line]
+
 
 [size=5][b]💰 Donations[/b][/size]
 My mods are and will always be free to use. If you'd like to support my work, you can donate here:
@@ -219,7 +212,7 @@ Thanks for checking out Marsarah Build Pieces!
 [size=4][b]v1.1.0[/b][/size]
 - Reorganized configuration entries to remove numbered setting names and use Configuration Manager ordering instead.
 - Added Smart Dropbox
-- Adde Small Sign
+- Added Small Sign
 - Recolored the Mystical Light Ward icon.
 
 [size=4][b]v1.0.0[/b][/size]

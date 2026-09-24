@@ -74,10 +74,17 @@ Or use a mod manager.
 
 CONFIGURATION
 ================================================================
+
 The config file is automatically generated on first launch:
 Valheim/BepInEx/config/Marsarah.MarsarahBuildPieces.cfg
 
-All Build Pieces settings are synchronized with the server.
+All Build Pieces settings are synchronized with the server using ServerSync.
+The configuration can be locked so only server administrators can change synchronized values.
+
+Individual features can be enabled or disabled, and configurable values such as the Smart Dropbox and Mystical Light Ward radii can be adjusted through the config file or a compatible configuration manager.
+
+Most settings can be changed during gameplay. Close and reopen the relevant build/crafting menu when needed for build or crafting menu changes to refresh.
+
 
 BUILD PIECES
 ================================================================

@@ -19,6 +19,7 @@ C. New additions
 * Smart Dropbox
   - Added a new configurable storage piece that automatically distributes deposited items to nearby supported chests that already contain the same item type. 
   - Includes synced search radius, nearest-first sorting, ward/access checks, multiplayer/dedicated-server support, local-world support, overflow handling, custom particles/material, and a config toggle that disables sorting while leaving placed Dropboxes usable as normal storage.
+  - Config is automatically disabled when MultiUserChest is detected, as they are incompatible together because of a risk of item loss.
 
 
 ============================================================
@@ -31,9 +32,3 @@ B. Next Release / High Priority
 -------------------------------
 
 C. New Build Pieces / Features
-------------------------------
-
-* Smart Dropbox:
-  - Items placed inside are automatically moved to nearby containers.
-  - Only move an item to a container that already contains that item/type.
-  - When the config is OFF but a Smart Dropbox already exists in world, disable its functionality and make a visual change + hover text.

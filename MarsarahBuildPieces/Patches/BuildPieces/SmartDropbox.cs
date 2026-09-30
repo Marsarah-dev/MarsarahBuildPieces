@@ -1393,6 +1393,11 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			activeDropboxes.Remove(dropbox);
 		}
+
+		internal static void LogLidDiagnostic(string message)
+		{
+			log.Info(message);
+		}
 	}
 
 	internal sealed class SmartDropboxBehavior : MonoBehaviour
@@ -1401,11 +1406,11 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 		private const float LidOpenAngleThreshold = 5f;
 		private const float LidOpenBackwardOffset = 0.28f;
 
-		private readonly List<Transform> lidTransforms = new List<Transform>();
-		private readonly List<Vector3> lidClosedPositions = new List<Vector3>();
-		private readonly List<Quaternion> lidClosedRotations = new List<Quaternion>();
+		private readonly List<Transform> lidDiagnosticTransforms = new List<Transform>();
+		private readonly List<Vector3> lidDiagnosticPositions = new List<Vector3>();
+		private readonly List<Quaternion> lidDiagnosticRotations = new List<Quaternion>();
 
-		private static readonly Vector3 LidHingeLocal = new Vector3(0f, 0.615f, 0.535f);
+		private float nextLidDiagnosticTime;
 
 		private void Start()
 		{
@@ -1414,7 +1419,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			if (nview == null || nview.GetZDO() == null)
 				return;
 
-			CacheLidPositions();
+			SetupLidDiagnostics();
 
 			SmartDropbox.HideRadiusMarker(gameObject);
 			SmartDropbox.RegisterDropbox(this);
@@ -1433,36 +1438,85 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			SmartDropbox.RequestServerHandoff(nview);
 		}
 
-		private void CacheLidPositions()
+		private void SetupLidDiagnostics()
 		{
+			HashSet<Transform> foundTransforms = new HashSet<Transform>();
+
 			foreach (MeshFilter meshFilter in GetComponentsInChildren<MeshFilter>(true))
 			{
 				if (meshFilter.sharedMesh == null || meshFilter.sharedMesh.name != "thunderstone_chest_lid")
 					continue;
 
-				Transform lid = meshFilter.transform;
+				Transform current = meshFilter.transform;
 
-				lidTransforms.Add(lid);
-				lidClosedPositions.Add(lid.localPosition);
-				lidClosedRotations.Add(lid.localRotation);
+				while (current != null)
+				{
+					if (foundTransforms.Add(current))
+					{
+						lidDiagnosticTransforms.Add(current);
+						lidDiagnosticPositions.Add(current.localPosition);
+						lidDiagnosticRotations.Add(current.localRotation);
+
+						SmartDropbox.LogLidDiagnostic(
+							$"Lid hierarchy | Path='{GetTransformPath(current)}' | " +
+							$"LocalPosition={current.localPosition} | " +
+							$"LocalRotation={current.localEulerAngles}"
+						);
+					}
+
+					if (current == transform)
+						break;
+
+					current = current.parent;
+				}
 			}
 		}
 
 		private void LateUpdate()
 		{
-			for (int i = 0; i < lidTransforms.Count; i++)
+			if (Time.unscaledTime < nextLidDiagnosticTime)
+				return;
+
+			nextLidDiagnosticTime = Time.unscaledTime + 0.25f;
+
+			for (int i = 0; i < lidDiagnosticTransforms.Count; i++)
 			{
-				Transform lid = lidTransforms[i];
-				if (lid == null)
+				Transform target = lidDiagnosticTransforms[i];
+				if (target == null)
 					continue;
 
-				float angle = Quaternion.Angle(lidClosedRotations[i], lid.localRotation);
+				float positionChange = Vector3.Distance(lidDiagnosticPositions[i], target.localPosition);
+				float rotationChange = Quaternion.Angle(lidDiagnosticRotations[i], target.localRotation);
 
-				if (angle > LidOpenAngleThreshold)
-					lid.localPosition = lidClosedPositions[i] + new Vector3(0f, 0f, LidOpenBackwardOffset);
-				else
-					lid.localPosition = lidClosedPositions[i];
+				if (positionChange < 0.001f && rotationChange < 0.1f)
+					continue;
+
+				SmartDropbox.LogLidDiagnostic(
+					$"Lid changed | Path='{GetTransformPath(target)}' | " +
+					$"LocalPosition={target.localPosition} | " +
+					$"PositionDelta={target.localPosition - lidDiagnosticPositions[i]} | " +
+					$"LocalRotation={target.localEulerAngles} | " +
+					$"RotationDelta={rotationChange:0.00}"
+				);
 			}
+		}
+
+		private string GetTransformPath(Transform target)
+		{
+			string path = target.name;
+			Transform current = target.parent;
+
+			while (current != null)
+			{
+				path = current.name + "/" + path;
+
+				if (current == transform)
+					break;
+
+				current = current.parent;
+			}
+
+			return path;
 		}
 	}
 }

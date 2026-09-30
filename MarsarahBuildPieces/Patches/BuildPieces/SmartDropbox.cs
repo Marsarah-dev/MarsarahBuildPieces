@@ -25,6 +25,9 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 		private static ZRoutedRpc registeredRoutedRpc;
 		private static readonly int SmartDropboxPrefabHash = "smart_dropbox".GetStableHashCode();
 
+		private const string SmartDropboxGlowName = "SmartDropboxGlow";
+		private static readonly Color SmartDropboxGlowColor = new Color(0.25f, 0.55f, 1f, 1f);
+
 		private static readonly HashSet<int> SupportedStoragePrefabs = new HashSet<int>
 		{
 			"piece_chest_wood".GetStableHashCode(),
@@ -304,7 +307,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			colliderBox.center = new Vector3(0f, 0.29f, -0.015f);
 			colliderBox.size = new Vector3(2.00f, 0.60f, 1.06f);
 
-			log.Warn($"Smart Dropbox collider created | Center={colliderBox.center} | Size={colliderBox.size}");
+			log.Info($"Smart Dropbox collider created | Center={colliderBox.center} | Size={colliderBox.size}");
 		}
 
 		private static void RegisterHandoffRpc()
@@ -1147,6 +1150,8 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			int bodiesReplaced = ReplaceMeshInstances(prefab, "ironchest", sourceBody.sharedMesh, bodyMaterial);
 			int lidsReplaced = ReplaceMeshInstances(prefab, "ironchesttop", sourceLid.sharedMesh, lidMaterial);
 
+			AddSmartDropboxGlow(prefab, bodyMaterial);
+
 			log.Info($"Applied custom Smart Dropbox visual | Bodies={bodiesReplaced} | Lids={lidsReplaced}");
 
 			if (bodiesReplaced == 0 || lidsReplaced == 0)
@@ -1270,76 +1275,104 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			return replaced;
 		}
 
-		private static void CopyMeshAndMaterials(MeshFilter source, MeshFilter target)
+		private static void AddSmartDropboxGlow(GameObject prefab, Material bodyMaterial)
 		{
-			target.sharedMesh = source.sharedMesh;
-
-			Renderer sourceRenderer = source.GetComponent<Renderer>();
-			Renderer targetRenderer = target.GetComponent<Renderer>();
-
-			if (sourceRenderer == null || targetRenderer == null)
-				return;
-
-			targetRenderer.sharedMaterials = sourceRenderer.sharedMaterials;
-		}
-
-		private static void ApplySmartDropboxMaterial(GameObject prefab, string sourcePrefabName, string sourceMaterialName)
-		{
-			if (prefab == null)
-				return;
-
-			GameObject sourcePrefab = MPrefabManager.GetPrefab(sourcePrefabName);
-			if (sourcePrefab == null)
+			MeshFilter body = FindMeshFilterByMeshName(prefab, "thunderstone_chest_body");
+			if (body == null)
 			{
-				log.Warn($"Could not find source prefab '{sourcePrefabName}' for Smart Dropbox material.");
+				log.Warn("Could not find Smart Dropbox body for Thunderstone glow.");
 				return;
 			}
 
-			Material sourceMaterial = null;
+			GameObject glow = new GameObject("SmartDropboxGlow");
+			glow.transform.SetParent(body.transform, false);
 
-			foreach (Renderer renderer in sourcePrefab.GetComponentsInChildren<Renderer>(true))
+			glow.transform.localPosition = new Vector3(0f, 0.34f, -0.578f);
+			glow.transform.localRotation = Quaternion.identity;
+			glow.transform.localScale = Vector3.one;
+
+			MeshFilter meshFilter = glow.AddComponent<MeshFilter>();
+			meshFilter.sharedMesh = CreateSmartDropboxGlowMesh();
+
+			MeshRenderer renderer = glow.AddComponent<MeshRenderer>();
+
+			Material glowMaterial = new Material(bodyMaterial)
 			{
-				foreach (Material material in renderer.sharedMaterials)
-				{
-					if (material == null || material.name != sourceMaterialName)
-						continue;
-
-					sourceMaterial = material;
-					break;
-				}
-
-				if (sourceMaterial != null)
-					break;
-			}
-
-			if (sourceMaterial == null)
-			{
-				log.Warn($"Could not find material '{sourceMaterialName}' on prefab '{sourcePrefabName}'.");
-				return;
-			}
-
-			Material smartMaterial = new Material(sourceMaterial)
-			{
-				name = "SmartDropbox_Material"
+				name = "SmartDropbox_ThunderstoneGlow"
 			};
 
-			foreach (Renderer renderer in prefab.GetComponentsInChildren<Renderer>(true))
+			if (glowMaterial.HasProperty("_EmissionColor"))
+				glowMaterial.SetColor("_EmissionColor", SmartDropboxGlowColor * 2.5f);
+
+			glowMaterial.EnableKeyword("_EMISSION");
+
+			renderer.sharedMaterial = glowMaterial;
+
+			GameObject lightObject = new GameObject("SmartDropboxGlowLight");
+			lightObject.transform.SetParent(glow.transform, false);
+			lightObject.transform.localPosition = new Vector3(0f, 0f, -0.12f);
+			lightObject.transform.localRotation = Quaternion.identity;
+
+			Light light = lightObject.AddComponent<Light>();
+			light.type = LightType.Spot;
+			light.color = SmartDropboxGlowColor;
+			light.range = 0.65f;
+			light.intensity = 0.75f;
+			light.spotAngle = 70f;
+			light.shadows = LightShadows.None;
+
+			glow.SetActive(ConfigManager.SmartDropboxEnabled.Value);
+
+			log.Info("Added Thunderstone glow to Smart Dropbox.");
+		}
+
+		private static Mesh CreateSmartDropboxGlowMesh()
+		{
+			const float halfSize = 0.105f;
+
+			Mesh mesh = new Mesh
 			{
-				Material[] materials = renderer.sharedMaterials;
-				bool changed = false;
+				name = "SmartDropbox_ThunderstoneGlowMesh"
+			};
 
-				for (int i = 0; i < materials.Length; i++)
-				{
-					if (materials[i] == null || !materials[i].name.StartsWith("ironchest"))
-						continue;
+			mesh.vertices = new[]
+			{
+				new Vector3(0f, halfSize, 0f),
+				new Vector3(halfSize, 0f, 0f),
+				new Vector3(0f, -halfSize, 0f),
+				new Vector3(-halfSize, 0f, 0f)
+			};
 
-					materials[i] = smartMaterial;
-					changed = true;
-				}
+			const float minU = 0.52f;
+			const float maxU = 0.98f;
+			const float minV = 0.02f;
+			const float maxV = 0.48f;
 
-				if (changed)
-					renderer.sharedMaterials = materials;
-			}
+			mesh.uv = new[]
+			{
+				new Vector2(maxU, maxV), // Top
+				new Vector2(minU, maxV), // Right
+				new Vector2(minU, minV), // Bottom
+				new Vector2(maxU, minV)  // Left
+			};
+
+			mesh.triangles = new[]
+			{
+				0, 1, 2,
+				0, 2, 3
+			};
+
+			mesh.normals = new[]
+			{
+				Vector3.back,
+				Vector3.back,
+				Vector3.back,
+				Vector3.back
+			};
+
+			mesh.RecalculateBounds();
+
+			return mesh;
 		}
 
 		private static void SetVisualState(GameObject dropbox, bool enabled)
@@ -1347,9 +1380,14 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			if (dropbox == null)
 				return;
 
-			Transform effect = dropbox.transform.Find("SmartDropboxEffect");
-			if (effect != null)
-				effect.gameObject.SetActive(enabled);
+			foreach (Transform child in dropbox.GetComponentsInChildren<Transform>(true))
+			{
+				if (child.name != "SmartDropboxGlow")
+					continue;
+
+				child.gameObject.SetActive(enabled);
+				return;
+			}
 		}
 
 		internal static void RegisterDropbox(SmartDropboxBehavior dropbox)

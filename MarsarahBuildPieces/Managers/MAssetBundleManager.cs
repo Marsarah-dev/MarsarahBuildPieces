@@ -101,5 +101,78 @@ namespace MarsarahBuildPieces.Managers
 
 			return null;
 		}
+
+		internal static Sprite LoadEmbeddedSprite(string fileName)
+		{
+			if (string.IsNullOrWhiteSpace(fileName))
+			{
+				log.Error("Cannot load embedded sprite with an empty file name.");
+				return null;
+			}
+
+			string resourceName = $"MarsarahBuildPieces.Assets.{fileName}";
+			Assembly assembly = Assembly.GetExecutingAssembly();
+
+			using (Stream stream = assembly.GetManifestResourceStream(resourceName))
+			{
+				if (stream == null)
+				{
+					log.Error($"Embedded image '{resourceName}' was not found.");
+					return null;
+				}
+
+				byte[] data;
+
+				using (BinaryReader reader = new BinaryReader(stream))
+					data = reader.ReadBytes((int)stream.Length);
+
+				Texture2D texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+
+				if (!LoadImage(texture, data))
+				{
+					log.Error($"Failed to load embedded image '{resourceName}'.");
+					UnityEngine.Object.Destroy(texture);
+					return null;
+				}
+
+				texture.name = Path.GetFileNameWithoutExtension(fileName);
+				texture.wrapMode = TextureWrapMode.Clamp;
+
+				Sprite sprite = Sprite.Create(texture, new Rect(0f, 0f, texture.width, texture.height), new Vector2(0.5f, 0.5f), 100f);
+				sprite.name = texture.name;
+
+				log.Info($"Loaded embedded sprite '{fileName}'.");
+
+				return sprite;
+			}
+		}
+
+		private static bool LoadImage(Texture2D texture, byte[] data)
+		{
+			Type imageConversionType = Type.GetType("UnityEngine.ImageConversion, UnityEngine.ImageConversionModule");
+			if (imageConversionType == null)
+			{
+				log.Error("Could not resolve UnityEngine.ImageConversion at runtime.");
+				return false;
+			}
+
+			MethodInfo loadImageMethod = imageConversionType.GetMethod(
+				"LoadImage",
+				BindingFlags.Public | BindingFlags.Static,
+				null,
+				new[] { typeof(Texture2D), typeof(byte[]), typeof(bool) },
+				null
+			);
+
+			if (loadImageMethod == null)
+			{
+				log.Error("Could not resolve UnityEngine.ImageConversion.LoadImage.");
+				return false;
+			}
+
+			object result = loadImageMethod.Invoke(null, new object[] { texture, data, false });
+
+			return result is bool loaded && loaded;
+		}
 	}
 }

@@ -130,11 +130,10 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			SetupSmartDropboxDefaults(SmartDropboxPrefab);
 			ApplySmartDropboxVisual(SmartDropboxPrefab);
+			SetSmartDropboxIcon(SmartDropboxPrefab);
 			FitSmartDropboxCollider(SmartDropboxPrefab);
 			AddRadiusMarker(SmartDropboxPrefab);
-
-			// Temporarily disabled while testing the new custom visual.
-			//AddSmartDropboxEffect(SmartDropboxPrefab);
+			AddSmartDropboxEffect(SmartDropboxPrefab);
 
 			if (SmartDropboxPrefab.GetComponent<SmartDropboxBehavior>() == null)
 				SmartDropboxPrefab.AddComponent<SmartDropboxBehavior>();
@@ -170,6 +169,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			piece.m_enabled = true;
 			piece.m_name = "Smart Dropbox";
 			piece.m_description = "Distributes deposited items to nearby storage that already contains the same item.";
+			piece.m_icon = MAssetBundleManager.LoadEmbeddedSprite("Smart_Dropbox.png");
 
 			Container container = prefab.GetComponent<Container>();
 			if (container == null)
@@ -1484,6 +1484,33 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				return;
 
 			activeDropboxes.Remove(dropbox);
+		}
+
+		private static void SetSmartDropboxIcon(GameObject prefab)
+		{
+			Piece piece = prefab.GetComponent<Piece>();
+			if (piece == null)
+			{
+				log.Warn("Could not set Smart Dropbox icon because the Piece component is missing.");
+				return;
+			}
+
+			Texture2D texture = MAssetBundleManager.LoadTexture("Smart_Dropbox.png");
+			if (texture == null)
+			{
+				log.Warn("Could not load Smart_Dropbox.png for the Smart Dropbox icon.");
+				return;
+			}
+
+			piece.m_icon = Sprite.Create(
+				texture,
+				new Rect(0f, 0f, texture.width, texture.height),
+				new Vector2(0.5f, 0.5f)
+			);
+
+			piece.m_icon.name = "Smart_Dropbox";
+
+			log.Info("Applied custom Smart Dropbox build-menu icon.");
 		}
 	}
 

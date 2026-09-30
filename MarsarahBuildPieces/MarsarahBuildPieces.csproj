@@ -11,10 +11,12 @@
   <ItemGroup>
     <None Remove="Assets\marsabundle" />
     <None Remove="Assets\marsarahbuildpieces_assets" />
+    <None Remove="Assets\Smart_Dropbox.png" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="Assets\marsarahbuildpieces_assets" />
+    <EmbeddedResource Include="Assets\Smart_Dropbox.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -64,6 +66,9 @@
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>Libs\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.ImageConversionModule">
+      <HintPath>Libs\UnityEngine.ImageConversionModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.IMGUIModule">
       <HintPath>Libs\UnityEngine.IMGUIModule.dll</HintPath>

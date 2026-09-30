@@ -1148,7 +1148,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				return;
 
 			int bodiesReplaced = ReplaceMeshInstances(prefab, "ironchest", sourceBody.sharedMesh, bodyMaterial);
-			int lidsReplaced = ReplaceMeshInstances(prefab, "ironchesttop", sourceLid.sharedMesh, lidMaterial);
+			int lidsReplaced = CreateSmartDropboxLidVisual(prefab, sourceLid.sharedMesh, lidMaterial);
 
 			AddSmartDropboxGlow(prefab, bodyMaterial);
 
@@ -1270,6 +1270,61 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 					renderer.sharedMaterial = replacementMaterial;
 
 				replaced++;
+			}
+
+			return replaced;
+		}
+
+		private static int CreateSmartDropboxLidVisual(GameObject root, Mesh replacementMesh, Material replacementMaterial)
+		{
+			int replaced = 0;
+
+			foreach (MeshFilter meshFilter in root.GetComponentsInChildren<MeshFilter>(true))
+			{
+				if (meshFilter.sharedMesh == null || meshFilter.sharedMesh.name != "ironchesttop")
+					continue;
+
+				Transform driver = meshFilter.transform;
+				Transform parent = driver.parent;
+
+				if (parent == null)
+				{
+					log.Warn("Could not create Smart Dropbox lid pivot because the lid driver has no parent.");
+					continue;
+				}
+
+				Renderer driverRenderer = meshFilter.GetComponent<Renderer>();
+				if (driverRenderer != null)
+					driverRenderer.enabled = false;
+
+				Vector3 hingeLocal = new Vector3(0f, 0.615f, 0.535f);
+				Vector3 hingeWorld = driver.TransformPoint(hingeLocal);
+
+				GameObject pivotObject = new GameObject("SmartDropboxLidPivot");
+				pivotObject.transform.SetParent(parent, false);
+				pivotObject.transform.position = hingeWorld;
+				pivotObject.transform.localRotation = Quaternion.identity;
+				pivotObject.transform.localScale = Vector3.one;
+
+				GameObject visualObject = new GameObject("SmartDropboxLidVisual");
+				visualObject.transform.SetParent(pivotObject.transform, false);
+
+				visualObject.transform.position = driver.position;
+				visualObject.transform.rotation = driver.rotation;
+				visualObject.transform.localScale = driver.localScale;
+
+				MeshFilter visualMeshFilter = visualObject.AddComponent<MeshFilter>();
+				visualMeshFilter.sharedMesh = replacementMesh;
+
+				MeshRenderer visualRenderer = visualObject.AddComponent<MeshRenderer>();
+				visualRenderer.sharedMaterial = replacementMaterial;
+
+				SmartDropboxLidVisualFollower follower = pivotObject.AddComponent<SmartDropboxLidVisualFollower>();
+				follower.Initialize(driver);
+
+				replaced++;
+
+				log.Info($"Created Smart Dropbox lid pivot at {hingeLocal}.");
 			}
 
 			return replaced;
@@ -1421,6 +1476,26 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				nview = SmartDropbox.GetContainerZNetView(GetComponent<Container>());
 
 			SmartDropbox.RequestServerHandoff(nview);
+		}
+	}
+
+	internal sealed class SmartDropboxLidVisualFollower : MonoBehaviour
+	{
+		private Transform driver;
+		private Quaternion closedDriverRotation;
+
+		internal void Initialize(Transform lidDriver)
+		{
+			driver = lidDriver;
+			closedDriverRotation = driver.localRotation;
+		}
+
+		private void LateUpdate()
+		{
+			if (driver == null)
+				return;
+
+			transform.localRotation = driver.localRotation * Quaternion.Inverse(closedDriverRotation);
 		}
 	}
 }

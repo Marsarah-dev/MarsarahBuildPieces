@@ -1144,6 +1144,8 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			Material bodyMaterial = CreateRuntimeSmartDropboxMaterial(sourceBodyRenderer.sharedMaterial, "SmartDropbox_Body_Material");
 			Material lidMaterial = CreateRuntimeSmartDropboxMaterial(sourceLidRenderer.sharedMaterial, "SmartDropbox_Lid_Material");
 
+			AdjustOpenLidPosition(prefab);
+
 			if (bodyMaterial == null || lidMaterial == null)
 				return;
 
@@ -1275,6 +1277,22 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			return replaced;
 		}
 
+		private static void AdjustOpenLidPosition(GameObject prefab)
+		{
+			foreach (Transform child in prefab.GetComponentsInChildren<Transform>(true))
+			{
+				if (child.name != "ironchesttop_open")
+					continue;
+
+				child.localPosition += new Vector3(0f, 0f, -0.28f);
+
+				log.Info($"Adjusted Smart Dropbox open lid position to {child.localPosition}.");
+				return;
+			}
+
+			log.Warn("Could not find ironchesttop_open to adjust Smart Dropbox lid position.");
+		}
+
 		private static void AddSmartDropboxGlow(GameObject prefab, Material bodyMaterial)
 		{
 			MeshFilter body = FindMeshFilterByMeshName(prefab, "thunderstone_chest_body");
@@ -1393,11 +1411,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			activeDropboxes.Remove(dropbox);
 		}
-
-		internal static void LogLidDiagnostic(string message)
-		{
-			log.Info(message);
-		}
 	}
 
 	internal sealed class SmartDropboxBehavior : MonoBehaviour
@@ -1406,20 +1419,12 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 		private const float LidOpenAngleThreshold = 5f;
 		private const float LidOpenBackwardOffset = 0.28f;
 
-		private readonly List<Transform> lidDiagnosticTransforms = new List<Transform>();
-		private readonly List<Vector3> lidDiagnosticPositions = new List<Vector3>();
-		private readonly List<Quaternion> lidDiagnosticRotations = new List<Quaternion>();
-
-		private float nextLidDiagnosticTime;
-
 		private void Start()
 		{
 			nview = SmartDropbox.GetContainerZNetView(GetComponent<Container>());
 
 			if (nview == null || nview.GetZDO() == null)
 				return;
-
-			SetupLidDiagnostics();
 
 			SmartDropbox.HideRadiusMarker(gameObject);
 			SmartDropbox.RegisterDropbox(this);
@@ -1436,87 +1441,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				nview = SmartDropbox.GetContainerZNetView(GetComponent<Container>());
 
 			SmartDropbox.RequestServerHandoff(nview);
-		}
-
-		private void SetupLidDiagnostics()
-		{
-			HashSet<Transform> foundTransforms = new HashSet<Transform>();
-
-			foreach (MeshFilter meshFilter in GetComponentsInChildren<MeshFilter>(true))
-			{
-				if (meshFilter.sharedMesh == null || meshFilter.sharedMesh.name != "thunderstone_chest_lid")
-					continue;
-
-				Transform current = meshFilter.transform;
-
-				while (current != null)
-				{
-					if (foundTransforms.Add(current))
-					{
-						lidDiagnosticTransforms.Add(current);
-						lidDiagnosticPositions.Add(current.localPosition);
-						lidDiagnosticRotations.Add(current.localRotation);
-
-						SmartDropbox.LogLidDiagnostic(
-							$"Lid hierarchy | Path='{GetTransformPath(current)}' | " +
-							$"LocalPosition={current.localPosition} | " +
-							$"LocalRotation={current.localEulerAngles}"
-						);
-					}
-
-					if (current == transform)
-						break;
-
-					current = current.parent;
-				}
-			}
-		}
-
-		private void LateUpdate()
-		{
-			if (Time.unscaledTime < nextLidDiagnosticTime)
-				return;
-
-			nextLidDiagnosticTime = Time.unscaledTime + 0.25f;
-
-			for (int i = 0; i < lidDiagnosticTransforms.Count; i++)
-			{
-				Transform target = lidDiagnosticTransforms[i];
-				if (target == null)
-					continue;
-
-				float positionChange = Vector3.Distance(lidDiagnosticPositions[i], target.localPosition);
-				float rotationChange = Quaternion.Angle(lidDiagnosticRotations[i], target.localRotation);
-
-				if (positionChange < 0.001f && rotationChange < 0.1f)
-					continue;
-
-				SmartDropbox.LogLidDiagnostic(
-					$"Lid changed | Path='{GetTransformPath(target)}' | " +
-					$"LocalPosition={target.localPosition} | " +
-					$"PositionDelta={target.localPosition - lidDiagnosticPositions[i]} | " +
-					$"LocalRotation={target.localEulerAngles} | " +
-					$"RotationDelta={rotationChange:0.00}"
-				);
-			}
-		}
-
-		private string GetTransformPath(Transform target)
-		{
-			string path = target.name;
-			Transform current = target.parent;
-
-			while (current != null)
-			{
-				path = current.name + "/" + path;
-
-				if (current == transform)
-					break;
-
-				current = current.parent;
-			}
-
-			return path;
 		}
 	}
 }

@@ -9,6 +9,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Assets\marsabundle" />
+    <None Remove="Assets\marsarahbuildpieces_assets" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\marsarahbuildpieces_assets" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Folder Include="Libs\" />
   </ItemGroup>
 

@@ -124,13 +124,15 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				return;
 			}
 
+			LogSmartDropboxColliders(SmartDropboxPrefab);
+
 			SetupSmartDropboxDefaults(SmartDropboxPrefab);
 			ApplySmartDropboxVisual(SmartDropboxPrefab);
+			FitSmartDropboxCollider(SmartDropboxPrefab);
 			AddRadiusMarker(SmartDropboxPrefab);
 
 			// Temporarily disabled while testing the new custom visual.
 			//AddSmartDropboxEffect(SmartDropboxPrefab);
-			//ApplySmartDropboxMaterial(SmartDropboxPrefab, "piece_chest_barrel", "barrelplayer_mat");
 
 			if (SmartDropboxPrefab.GetComponent<SmartDropboxBehavior>() == null)
 				SmartDropboxPrefab.AddComponent<SmartDropboxBehavior>();
@@ -287,6 +289,171 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				return null;
 
 			return container.GetComponent<SmartDropboxBehavior>() ?? container.GetComponentInParent<SmartDropboxBehavior>();
+		}
+
+		private static void FitSmartDropboxCollider(GameObject prefab)
+		{
+			if (!TryGetSmartDropboxVisualBounds(prefab, out Bounds visualBounds))
+			{
+				log.Error("Could not calculate Smart Dropbox visual bounds.");
+				return;
+			}
+
+			foreach (Collider collider in prefab.GetComponentsInChildren<Collider>(true))
+			{
+				if (collider.isTrigger)
+					continue;
+
+				log.Info($"Disabling inherited collider | Object='{collider.gameObject.name}' | Type={collider.GetType().Name}");
+				collider.enabled = false;
+			}
+
+			BoxCollider colliderBox = prefab.AddComponent<BoxCollider>();
+
+			colliderBox.center = visualBounds.center + new Vector3(0f, -0.02f, 0f);
+			colliderBox.size = new Vector3(
+				visualBounds.size.x + 0.02f,
+				Mathf.Max(0.1f, visualBounds.size.y - 0.06f),
+				visualBounds.size.z + 0.02f
+			);
+
+			log.Info($"Smart Dropbox collider created | Center={colliderBox.center} | Size={colliderBox.size}");
+		}
+
+		private static bool TryGetSmartDropboxVisualBounds(GameObject root, out Bounds result)
+		{
+			result = new Bounds();
+
+			bool found = false;
+
+			foreach (MeshFilter meshFilter in root.GetComponentsInChildren<MeshFilter>(true))
+			{
+				if (meshFilter.sharedMesh == null)
+					continue;
+
+				string meshName = meshFilter.sharedMesh.name;
+
+				if (meshName != "thunderstone_chest_body" &&
+					meshName != "thunderstone_chest_lid")
+					continue;
+
+				foreach (Vector3 corner in GetBoundsCorners(meshFilter.sharedMesh.bounds))
+				{
+					Vector3 worldPoint = meshFilter.transform.TransformPoint(corner);
+					Vector3 rootPoint = root.transform.InverseTransformPoint(worldPoint);
+
+					if (!found)
+					{
+						result = new Bounds(rootPoint, Vector3.zero);
+						found = true;
+					}
+					else
+					{
+						result.Encapsulate(rootPoint);
+					}
+				}
+			}
+
+			return found;
+		}
+
+		private static Bounds GetVisualBounds(GameObject root)
+		{
+			bool initialized = false;
+			Bounds result = new Bounds();
+
+			foreach (MeshFilter meshFilter in root.GetComponentsInChildren<MeshFilter>(true))
+			{
+				if (meshFilter.sharedMesh == null)
+					continue;
+
+				if (meshFilter.gameObject.name != "ironchest" &&
+					meshFilter.gameObject.name != "ironchesttop")
+					continue;
+
+				Bounds meshBounds = meshFilter.sharedMesh.bounds;
+
+				foreach (Vector3 corner in GetBoundsCorners(meshBounds))
+				{
+					Vector3 worldPoint = meshFilter.transform.TransformPoint(corner);
+					Vector3 rootPoint = root.transform.InverseTransformPoint(worldPoint);
+
+					if (!initialized)
+					{
+						result = new Bounds(rootPoint, Vector3.zero);
+						initialized = true;
+					}
+					else
+					{
+						result.Encapsulate(rootPoint);
+					}
+				}
+			}
+
+			return result;
+		}
+
+		private static Bounds ConvertBounds(Transform sourceRoot, Transform target, Bounds sourceBounds)
+		{
+			bool initialized = false;
+			Bounds result = new Bounds();
+
+			foreach (Vector3 corner in GetBoundsCorners(sourceBounds))
+			{
+				Vector3 worldPoint = sourceRoot.TransformPoint(corner);
+				Vector3 targetPoint = target.InverseTransformPoint(worldPoint);
+
+				if (!initialized)
+				{
+					result = new Bounds(targetPoint, Vector3.zero);
+					initialized = true;
+				}
+				else
+				{
+					result.Encapsulate(targetPoint);
+				}
+			}
+
+			return result;
+		}
+
+		private static IEnumerable<Vector3> GetBoundsCorners(Bounds bounds)
+		{
+			Vector3 center = bounds.center;
+			Vector3 extents = bounds.extents;
+
+			for (int x = -1; x <= 1; x += 2)
+			{
+				for (int y = -1; y <= 1; y += 2)
+				{
+					for (int z = -1; z <= 1; z += 2)
+					{
+						yield return center + Vector3.Scale(extents, new Vector3(x, y, z));
+					}
+				}
+			}
+		}
+
+		private static void LogSmartDropboxColliders(GameObject prefab)
+		{
+			foreach (Collider collider in prefab.GetComponentsInChildren<Collider>(true))
+			{
+				if (collider is BoxCollider box)
+				{
+					log.Info(
+						$"Collider | Object='{collider.gameObject.name}' | " +
+						$"Type=BoxCollider | Trigger={box.isTrigger} | " +
+						$"Center={box.center} | Size={box.size}"
+					);
+				}
+				else
+				{
+					log.Info(
+						$"Collider | Object='{collider.gameObject.name}' | " +
+						$"Type={collider.GetType().Name} | Trigger={collider.isTrigger}"
+					);
+				}
+			}
 		}
 
 		private static void RegisterHandoffRpc()
@@ -1111,28 +1278,93 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				return;
 			}
 
-			Renderer sourceRenderer = sourceBody.GetComponent<Renderer>();
-			if (sourceRenderer == null || sourceRenderer.sharedMaterial == null)
+			Renderer sourceBodyRenderer = sourceBody.GetComponent<Renderer>();
+			Renderer sourceLidRenderer = sourceLid.GetComponent<Renderer>();
+
+			if (sourceBodyRenderer == null || sourceLidRenderer == null)
 			{
-				log.Error("Thunderstone Chest visual body has no material.");
+				log.Error("Thunderstone Chest visual prefab is missing its body or lid renderer.");
 				return;
 			}
 
-			Material sourceMaterial = sourceRenderer.sharedMaterial;
+			Material bodyMaterial = CreateRuntimeSmartDropboxMaterial(sourceBodyRenderer.sharedMaterial, "SmartDropbox_Body_Material");
+			Material lidMaterial = CreateRuntimeSmartDropboxMaterial(sourceLidRenderer.sharedMaterial, "SmartDropbox_Lid_Material");
 
-			Texture diffuse = sourceMaterial.GetTexture("_MainTex");
-			Texture normal = sourceMaterial.GetTexture("_BumpMap");
-			Texture metallic = sourceMaterial.GetTexture("_MetallicTex");
-			Texture emission = sourceMaterial.GetTexture("_EmissionMap");
-			Color emissionColor = sourceMaterial.HasProperty("_EmissionColor") ? sourceMaterial.GetColor("_EmissionColor") : Color.white;
+			if (bodyMaterial == null || lidMaterial == null)
+				return;
 
-			int bodiesReplaced = ReplaceMeshInstances(prefab, "ironchest", sourceBody.sharedMesh, diffuse, normal, metallic, emission, emissionColor);
-			int lidsReplaced = ReplaceMeshInstances(prefab, "ironchesttop", sourceLid.sharedMesh, diffuse, normal, metallic, emission, emissionColor);
+			int bodiesReplaced = ReplaceMeshInstances(prefab, "ironchest", sourceBody.sharedMesh, bodyMaterial);
+			int lidsReplaced = ReplaceMeshInstances(prefab, "ironchesttop", sourceLid.sharedMesh, lidMaterial);
 
-			log.Info($"Applied Thunderstone Chest visual | Bodies={bodiesReplaced} | Lids={lidsReplaced}");
+			log.Info($"Applied custom Smart Dropbox visual | Bodies={bodiesReplaced} | Lids={lidsReplaced}");
 
 			if (bodiesReplaced == 0 || lidsReplaced == 0)
 				LogMeshFilters(prefab);
+		}
+
+		private static Material CreateRuntimeSmartDropboxMaterial(Material sourceMaterial, string materialName)
+		{
+			if (sourceMaterial == null)
+			{
+				log.Error($"Could not create '{materialName}' because the bundled source material is null.");
+				return null;
+			}
+
+			Shader pieceShader = GetRuntimePieceShader();
+			if (pieceShader == null)
+				return null;
+
+			Material material = new Material(pieceShader)
+			{
+				name = materialName
+			};
+
+			material.CopyPropertiesFromMaterial(sourceMaterial);
+
+			// CopyPropertiesFromMaterial does not replace the shader,
+			// so this remains Valheim's live Custom/Piece shader.
+			material.shader = pieceShader;
+
+			if (material.HasProperty("_BumpMap") && material.GetTexture("_BumpMap") != null)
+				material.EnableKeyword("_NORMALMAP");
+
+			if (material.HasProperty("_MetallicTex") && material.GetTexture("_MetallicTex") != null)
+				material.EnableKeyword("_METALLICGLOSSMAP");
+
+			if (material.HasProperty("_EmissionMap") && material.GetTexture("_EmissionMap") != null)
+			{
+				material.EnableKeyword("_EMISSION");
+				material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
+			}
+
+			return material;
+		}
+
+		private static Shader GetRuntimePieceShader()
+		{
+			Shader shader = Shader.Find("Custom/Piece");
+			if (shader != null)
+				return shader;
+
+			GameObject sourcePrefab = MPrefabManager.GetPrefab("piece_chest");
+			if (sourcePrefab != null)
+			{
+				foreach (Renderer renderer in sourcePrefab.GetComponentsInChildren<Renderer>(true))
+				{
+					if (renderer.sharedMaterial == null || renderer.sharedMaterial.shader == null)
+						continue;
+
+					if (renderer.sharedMaterial.shader.name != "Custom/Piece")
+						continue;
+
+					log.Info("Resolved Custom/Piece shader from runtime piece_chest material.");
+					return renderer.sharedMaterial.shader;
+				}
+			}
+
+			log.Error("Could not resolve Valheim's runtime Custom/Piece shader.");
+
+			return null;
 		}
 
 		private static MeshFilter FindMeshFilter(GameObject root, string objectName)
@@ -1166,7 +1398,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			}
 		}
 
-		private static int ReplaceMeshInstances(GameObject root, string targetMeshName, Mesh replacementMesh, Texture diffuse, Texture normal, Texture metallic, Texture emission, Color emissionColor)
+		private static int ReplaceMeshInstances(GameObject root, string targetMeshName, Mesh replacementMesh, Material replacementMaterial)
 		{
 			int replaced = 0;
 
@@ -1175,50 +1407,16 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				if (meshFilter.sharedMesh == null || meshFilter.sharedMesh.name != targetMeshName)
 					continue;
 
+				meshFilter.sharedMesh = replacementMesh;
+
 				Renderer renderer = meshFilter.GetComponent<Renderer>();
 				if (renderer != null)
-					ApplySmartDropboxTextures(renderer, diffuse, normal, metallic, emission, emissionColor);
+					renderer.sharedMaterial = replacementMaterial;
 
-				meshFilter.sharedMesh = replacementMesh;
 				replaced++;
 			}
 
 			return replaced;
-		}
-
-		private static void ApplySmartDropboxTextures(Renderer renderer, Texture diffuse, Texture normal, Texture metallic, Texture emission, Color emissionColor)
-		{
-			Material[] materials = renderer.sharedMaterials;
-
-			for (int i = 0; i < materials.Length; i++)
-			{
-				if (materials[i] == null)
-					continue;
-
-				Material material = new Material(materials[i])
-				{
-					name = "SmartDropbox_Material"
-				};
-
-				if (diffuse != null && material.HasProperty("_MainTex"))
-					material.SetTexture("_MainTex", diffuse);
-
-				if (normal != null && material.HasProperty("_BumpMap"))
-					material.SetTexture("_BumpMap", normal);
-
-				if (metallic != null && material.HasProperty("_MetallicTex"))
-					material.SetTexture("_MetallicTex", metallic);
-
-				if (emission != null && material.HasProperty("_EmissionMap"))
-					material.SetTexture("_EmissionMap", emission);
-
-				if (material.HasProperty("_EmissionColor"))
-					material.SetColor("_EmissionColor", emissionColor);
-
-				materials[i] = material;
-			}
-
-			renderer.sharedMaterials = materials;
 		}
 
 		private static void CopyMeshAndMaterials(MeshFilter source, MeshFilter target)

@@ -1398,8 +1398,14 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 	internal sealed class SmartDropboxBehavior : MonoBehaviour
 	{
 		private ZNetView nview;
+		private const float LidOpenAngleThreshold = 5f;
+		private const float LidOpenBackwardOffset = 0.28f;
+
 		private readonly List<Transform> lidTransforms = new List<Transform>();
 		private readonly List<Vector3> lidClosedPositions = new List<Vector3>();
+		private readonly List<Quaternion> lidClosedRotations = new List<Quaternion>();
+
+		private static readonly Vector3 LidHingeLocal = new Vector3(0f, 0.615f, 0.535f);
 
 		private void Start()
 		{
@@ -1434,8 +1440,11 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				if (meshFilter.sharedMesh == null || meshFilter.sharedMesh.name != "thunderstone_chest_lid")
 					continue;
 
-				lidTransforms.Add(meshFilter.transform);
-				lidClosedPositions.Add(meshFilter.transform.localPosition);
+				Transform lid = meshFilter.transform;
+
+				lidTransforms.Add(lid);
+				lidClosedPositions.Add(lid.localPosition);
+				lidClosedRotations.Add(lid.localRotation);
 			}
 		}
 
@@ -1447,7 +1456,12 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				if (lid == null)
 					continue;
 
-				lid.localPosition = lidClosedPositions[i];
+				float angle = Quaternion.Angle(lidClosedRotations[i], lid.localRotation);
+
+				if (angle > LidOpenAngleThreshold)
+					lid.localPosition = lidClosedPositions[i] + new Vector3(0f, 0f, LidOpenBackwardOffset);
+				else
+					lid.localPosition = lidClosedPositions[i];
 			}
 		}
 	}

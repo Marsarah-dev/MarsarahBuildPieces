@@ -10,6 +10,7 @@ A. Fixes
 
 B. Updates
 -----------------------
+* Added a custom prefab and icon for the Smart Dropbox.
 
 C. New additions
 -----------------------

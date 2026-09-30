@@ -9,7 +9,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 {
 	internal static class SmartDropbox
 	{
-		private static readonly LogManager log = new LogManager("Smart Dropbox", LogManager.LogLevel.Info);
+		private static readonly LogManager log = new LogManager("Smart Dropbox", LogManager.LogLevel.Warning);
 
 		private static bool initialized;
 		private static GameObject SmartDropboxPrefab;
@@ -132,7 +132,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			ApplySmartDropboxVisual(SmartDropboxPrefab);
 			FitSmartDropboxCollider(SmartDropboxPrefab);
 			AddRadiusMarker(SmartDropboxPrefab);
-			//AddSmartDropboxEffect(SmartDropboxPrefab);
 
 			if (SmartDropboxPrefab.GetComponent<SmartDropboxBehavior>() == null)
 				SmartDropboxPrefab.AddComponent<SmartDropboxBehavior>();
@@ -169,7 +168,10 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			piece.m_enabled = true;
 			piece.m_name = "Smart Dropbox";
 			piece.m_description = "Distributes deposited items to nearby storage that already contains the same item.";
-			piece.m_icon = MAssetBundleManager.LoadEmbeddedSprite("Smart_Dropbox.png");
+			Sprite icon = MAssetBundleManager.LoadEmbeddedSprite("Smart_Dropbox.png");
+
+			if (icon != null)
+				piece.m_icon = icon;
 
 			Container container = prefab.GetComponent<Container>();
 			if (container == null)
@@ -1059,62 +1061,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			return false;
 		}
 
-		private static void AddSmartDropboxEffect(GameObject prefab)
-		{
-			GameObject wardPrefab = MPrefabManager.GetPrefab("guard_stone");
-			if (wardPrefab == null)
-			{
-				log.Warn("Could not find guard_stone for Smart Dropbox visual effect.");
-				return;
-			}
-
-			Transform sourceEffect = wardPrefab.transform.Find("WayEffect");
-			if (sourceEffect == null)
-			{
-				log.Warn("Could not find WayEffect on guard_stone.");
-				return;
-			}
-
-			GameObject effect = UnityEngine.Object.Instantiate(sourceEffect.gameObject, prefab.transform);
-			effect.name = "SmartDropboxEffect";
-
-			effect.transform.localPosition = new Vector3(0f, 0.65f, 0f);
-			effect.transform.localRotation = Quaternion.identity;
-			effect.transform.localScale = Vector3.one * 0.55f;
-
-			foreach (Component component in effect.GetComponentsInChildren<Component>(true))
-			{
-				if (component != null && component.GetType().Name == "AudioSource")
-					UnityEngine.Object.DestroyImmediate(component);
-			}
-
-			ConfigureSmartDropboxEffect(effect);
-
-			effect.SetActive(ConfigManager.SmartDropboxEnabled.Value);
-		}
-
-
-		private static void ConfigureSmartDropboxEffect(GameObject effect)
-		{
-			if (effect == null)
-				return;
-
-			DisableEffectChild(effect.transform, "Point light");
-			DisableEffectChild(effect.transform, "flare");
-			DisableEffectChild(effect.transform, "pulse (1)");
-			DisableEffectChild(effect.transform, "pulse (2)");
-
-			// Optional: if the glow itself is still too bright, disable this too.
-			// DisableEffectChild(effect.transform, "glow");
-		}
-
-		private static void DisableEffectChild(Transform root, string childName)
-		{
-			Transform child = root.Find(childName);
-			if (child != null)
-				child.gameObject.SetActive(false);
-		}
-
 		private static void ApplySmartDropboxVisual(GameObject prefab)
 		{
 			GameObject visualPrefab = MAssetBundleManager.LoadPrefab("thunderstone_chest_visual");
@@ -1135,10 +1081,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 					return;
 				}
 
-				Material material = CreateRuntimeSmartDropboxMaterial(
-					sourceRenderer.sharedMaterial,
-					$"SmartDropbox_{region}_Material"
-				);
+				Material material = CreateRuntimeSmartDropboxMaterial(sourceRenderer.sharedMaterial, $"SmartDropbox_{region}_Material");
 
 				if (material == null)
 					return;
@@ -1310,47 +1253,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			return null;
 		}
 
-		private static MeshFilter FindMeshFilterByMeshName(GameObject root, string meshName)
-		{
-			foreach (MeshFilter meshFilter in root.GetComponentsInChildren<MeshFilter>(true))
-			{
-				if (meshFilter.sharedMesh != null && meshFilter.sharedMesh.name == meshName)
-					return meshFilter;
-			}
-
-			return null;
-		}
-
-		private static void LogMeshFilters(GameObject root)
-		{
-			foreach (MeshFilter meshFilter in root.GetComponentsInChildren<MeshFilter>(true))
-			{
-				string meshName = meshFilter.sharedMesh != null ? meshFilter.sharedMesh.name : "<null>";
-				log.Info($"MeshFilter | Object='{meshFilter.gameObject.name}' | Mesh='{meshName}'");
-			}
-		}
-
-		private static int ReplaceMeshInstances(GameObject root, string targetMeshName, Mesh replacementMesh, Material replacementMaterial)
-		{
-			int replaced = 0;
-
-			foreach (MeshFilter meshFilter in root.GetComponentsInChildren<MeshFilter>(true))
-			{
-				if (meshFilter.sharedMesh == null || meshFilter.sharedMesh.name != targetMeshName)
-					continue;
-
-				meshFilter.sharedMesh = replacementMesh;
-
-				Renderer renderer = meshFilter.GetComponent<Renderer>();
-				if (renderer != null)
-					renderer.sharedMaterial = replacementMaterial;
-
-				replaced++;
-			}
-
-			return replaced;
-		}
-
 		private static void AdjustOpenLidPosition(GameObject prefab)
 		{
 			foreach (Transform child in prefab.GetComponentsInChildren<Transform>(true))
@@ -1376,7 +1278,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				return;
 			}
 
-			GameObject glow = new GameObject("SmartDropboxGlow");
+			GameObject glow = new GameObject(SmartDropboxGlowName);
 			glow.transform.SetParent(body, false);
 
 			glow.transform.localPosition = new Vector3(0f, 0.34f, -0.578f);
@@ -1461,7 +1363,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			foreach (Transform child in dropbox.GetComponentsInChildren<Transform>(true))
 			{
-				if (child.name != "SmartDropboxGlow")
+				if (child.name != SmartDropboxGlowName)
 					continue;
 
 				child.gameObject.SetActive(enabled);
@@ -1490,8 +1392,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 	internal sealed class SmartDropboxBehavior : MonoBehaviour
 	{
 		private ZNetView nview;
-		private const float LidOpenAngleThreshold = 5f;
-		private const float LidOpenBackwardOffset = 0.28f;
 
 		private void Start()
 		{

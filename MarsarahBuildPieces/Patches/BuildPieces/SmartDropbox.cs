@@ -27,6 +27,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 		private const string SmartDropboxGlowName = "SmartDropboxGlow";
 		private static readonly Color SmartDropboxGlowColor = new Color(0.25f, 0.55f, 1f, 1f);
+		private static readonly string[] SmartDropboxVisualRegions = {"wood", "iron", "copper", "stone"};
 
 		private static readonly HashSet<int> SupportedStoragePrefabs = new HashSet<int>
 		{
@@ -1123,41 +1124,114 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				return;
 			}
 
-			MeshFilter sourceBody = FindMeshFilter(visualPrefab, "thunderstone_chest_visual_body");
-			MeshFilter sourceLid = FindMeshFilter(visualPrefab, "thunderstone_chest_visual_lid");
+			Dictionary<string, Material> runtimeMaterials = new Dictionary<string, Material>();
 
-			if (sourceBody == null || sourceLid == null)
+			foreach (string region in SmartDropboxVisualRegions)
 			{
-				log.Error("Thunderstone Chest visual prefab is missing its body or lid mesh.");
-				return;
+				Renderer sourceRenderer = FindRenderer(visualPrefab, $"thunderstone_chest_body_{region}");
+				if (sourceRenderer == null || sourceRenderer.sharedMaterial == null)
+				{
+					log.Error($"Thunderstone Chest visual is missing material source for '{region}'.");
+					return;
+				}
+
+				Material material = CreateRuntimeSmartDropboxMaterial(
+					sourceRenderer.sharedMaterial,
+					$"SmartDropbox_{region}_Material"
+				);
+
+				if (material == null)
+					return;
+
+				runtimeMaterials[region] = material;
 			}
 
-			Renderer sourceBodyRenderer = sourceBody.GetComponent<Renderer>();
-			Renderer sourceLidRenderer = sourceLid.GetComponent<Renderer>();
-
-			if (sourceBodyRenderer == null || sourceLidRenderer == null)
-			{
-				log.Error("Thunderstone Chest visual prefab is missing its body or lid renderer.");
-				return;
-			}
-
-			Material bodyMaterial = CreateRuntimeSmartDropboxMaterial(sourceBodyRenderer.sharedMaterial, "SmartDropbox_Body_Material");
-			Material lidMaterial = CreateRuntimeSmartDropboxMaterial(sourceLidRenderer.sharedMaterial, "SmartDropbox_Lid_Material");
+			int bodyParts = ApplySplitVisual(prefab, visualPrefab, "ironchest", "thunderstone_chest_body", runtimeMaterials);
+			int closedLidParts = ApplySplitVisual(prefab, visualPrefab, "ironchesttop_closed", "thunderstone_chest_lid", runtimeMaterials);
+			int openLidParts = ApplySplitVisual(prefab, visualPrefab, "ironchesttop_open", "thunderstone_chest_lid", runtimeMaterials);
 
 			AdjustOpenLidPosition(prefab);
 
-			if (bodyMaterial == null || lidMaterial == null)
-				return;
+			AddSmartDropboxGlow(prefab, runtimeMaterials["stone"]);
 
-			int bodiesReplaced = ReplaceMeshInstances(prefab, "ironchest", sourceBody.sharedMesh, bodyMaterial);
-			int lidsReplaced = ReplaceMeshInstances(prefab, "ironchesttop", sourceLid.sharedMesh, lidMaterial);
+			log.Info(
+				$"Applied split Smart Dropbox visual | " +
+				$"Body={bodyParts} | ClosedLid={closedLidParts} | OpenLid={openLidParts}"
+			);
 
-			AddSmartDropboxGlow(prefab, bodyMaterial);
+			if (bodyParts != 4 || closedLidParts != 4 || openLidParts != 4)
+				log.Warn("Smart Dropbox split visual did not create all expected parts.");
+		}
 
-			log.Info($"Applied custom Smart Dropbox visual | Bodies={bodiesReplaced} | Lids={lidsReplaced}");
+		private static int ApplySplitVisual(GameObject root, GameObject visualPrefab, string targetObjectName, string sourcePrefix, Dictionary<string, Material> runtimeMaterials)
+		{
+			Transform target = FindTransform(root, targetObjectName);
+			if (target == null)
+			{
+				log.Warn($"Could not find Smart Dropbox visual target '{targetObjectName}'.");
+				return 0;
+			}
 
-			if (bodiesReplaced == 0 || lidsReplaced == 0)
-				LogMeshFilters(prefab);
+			MeshFilter originalMeshFilter = target.GetComponent<MeshFilter>();
+			if (originalMeshFilter != null)
+				originalMeshFilter.sharedMesh = null;
+
+			int added = 0;
+
+			foreach (string region in SmartDropboxVisualRegions)
+			{
+				MeshFilter sourceMeshFilter = FindMeshFilter(visualPrefab, $"{sourcePrefix}_{region}");
+				if (sourceMeshFilter == null || sourceMeshFilter.sharedMesh == null)
+				{
+					log.Warn($"Could not find split visual mesh '{sourcePrefix}_{region}'.");
+					continue;
+				}
+
+				if (!runtimeMaterials.TryGetValue(region, out Material material))
+				{
+					log.Warn($"Could not find runtime material for Smart Dropbox region '{region}'.");
+					continue;
+				}
+
+				GameObject part = new GameObject($"SmartDropbox_{targetObjectName}_{region}");
+				part.transform.SetParent(target, false);
+
+				part.transform.localPosition = sourceMeshFilter.transform.localPosition;
+				part.transform.localRotation = sourceMeshFilter.transform.localRotation;
+				part.transform.localScale = sourceMeshFilter.transform.localScale;
+
+				MeshFilter meshFilter = part.AddComponent<MeshFilter>();
+				meshFilter.sharedMesh = sourceMeshFilter.sharedMesh;
+
+				MeshRenderer renderer = part.AddComponent<MeshRenderer>();
+				renderer.sharedMaterial = material;
+
+				added++;
+			}
+
+			return added;
+		}
+
+		private static Transform FindTransform(GameObject root, string objectName)
+		{
+			foreach (Transform child in root.GetComponentsInChildren<Transform>(true))
+			{
+				if (child.name == objectName)
+					return child;
+			}
+
+			return null;
+		}
+
+		private static Renderer FindRenderer(GameObject root, string objectName)
+		{
+			foreach (Renderer renderer in root.GetComponentsInChildren<Renderer>(true))
+			{
+				if (renderer.gameObject.name == objectName)
+					return renderer;
+			}
+
+			return null;
 		}
 
 		private static Material CreateRuntimeSmartDropboxMaterial(Material sourceMaterial, string materialName)
@@ -1295,7 +1369,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 		private static void AddSmartDropboxGlow(GameObject prefab, Material bodyMaterial)
 		{
-			MeshFilter body = FindMeshFilterByMeshName(prefab, "thunderstone_chest_body");
+			Transform body = FindTransform(prefab, "ironchest");
 			if (body == null)
 			{
 				log.Warn("Could not find Smart Dropbox body for Thunderstone glow.");
@@ -1303,7 +1377,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			}
 
 			GameObject glow = new GameObject("SmartDropboxGlow");
-			glow.transform.SetParent(body.transform, false);
+			glow.transform.SetParent(body, false);
 
 			glow.transform.localPosition = new Vector3(0f, 0.34f, -0.578f);
 			glow.transform.localRotation = Quaternion.identity;

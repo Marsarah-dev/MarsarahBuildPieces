@@ -1302,24 +1302,11 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			};
 
 			if (glowMaterial.HasProperty("_EmissionColor"))
-				glowMaterial.SetColor("_EmissionColor", SmartDropboxGlowColor * 2.5f);
+				glowMaterial.SetColor("_EmissionColor", SmartDropboxGlowColor * 2.7f);
 
 			glowMaterial.EnableKeyword("_EMISSION");
 
 			renderer.sharedMaterial = glowMaterial;
-
-			GameObject lightObject = new GameObject("SmartDropboxGlowLight");
-			lightObject.transform.SetParent(glow.transform, false);
-			lightObject.transform.localPosition = new Vector3(0f, 0f, -0.12f);
-			lightObject.transform.localRotation = Quaternion.identity;
-
-			Light light = lightObject.AddComponent<Light>();
-			light.type = LightType.Spot;
-			light.color = SmartDropboxGlowColor;
-			light.range = 0.65f;
-			light.intensity = 0.75f;
-			light.spotAngle = 70f;
-			light.shadows = LightShadows.None;
 
 			glow.SetActive(ConfigManager.SmartDropboxEnabled.Value);
 

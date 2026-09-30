@@ -9,7 +9,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 {
 	internal static class SmartDropbox
 	{
-		private static readonly LogManager log = new LogManager("Smart Dropbox", LogManager.LogLevel.Warning);
+		private static readonly LogManager log = new LogManager("Smart Dropbox", LogManager.LogLevel.Info);
 
 		private static bool initialized;
 		private static GameObject SmartDropboxPrefab;
@@ -123,8 +123,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				log.Error("Failed to clone piece_chest.");
 				return;
 			}
-
-			LogSmartDropboxColliders(SmartDropboxPrefab);
 
 			SetupSmartDropboxDefaults(SmartDropboxPrefab);
 			ApplySmartDropboxVisual(SmartDropboxPrefab);
@@ -293,167 +291,20 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 		private static void FitSmartDropboxCollider(GameObject prefab)
 		{
-			if (!TryGetSmartDropboxVisualBounds(prefab, out Bounds visualBounds))
-			{
-				log.Error("Could not calculate Smart Dropbox visual bounds.");
-				return;
-			}
-
 			foreach (Collider collider in prefab.GetComponentsInChildren<Collider>(true))
 			{
 				if (collider.isTrigger)
 					continue;
 
-				log.Info($"Disabling inherited collider | Object='{collider.gameObject.name}' | Type={collider.GetType().Name}");
 				collider.enabled = false;
 			}
 
 			BoxCollider colliderBox = prefab.AddComponent<BoxCollider>();
 
-			colliderBox.center = visualBounds.center + new Vector3(0f, -0.02f, 0f);
-			colliderBox.size = new Vector3(
-				visualBounds.size.x + 0.02f,
-				Mathf.Max(0.1f, visualBounds.size.y - 0.06f),
-				visualBounds.size.z + 0.02f
-			);
+			colliderBox.center = new Vector3(0f, 0.29f, -0.015f);
+			colliderBox.size = new Vector3(2.00f, 0.60f, 1.06f);
 
-			log.Info($"Smart Dropbox collider created | Center={colliderBox.center} | Size={colliderBox.size}");
-		}
-
-		private static bool TryGetSmartDropboxVisualBounds(GameObject root, out Bounds result)
-		{
-			result = new Bounds();
-
-			bool found = false;
-
-			foreach (MeshFilter meshFilter in root.GetComponentsInChildren<MeshFilter>(true))
-			{
-				if (meshFilter.sharedMesh == null)
-					continue;
-
-				string meshName = meshFilter.sharedMesh.name;
-
-				if (meshName != "thunderstone_chest_body" &&
-					meshName != "thunderstone_chest_lid")
-					continue;
-
-				foreach (Vector3 corner in GetBoundsCorners(meshFilter.sharedMesh.bounds))
-				{
-					Vector3 worldPoint = meshFilter.transform.TransformPoint(corner);
-					Vector3 rootPoint = root.transform.InverseTransformPoint(worldPoint);
-
-					if (!found)
-					{
-						result = new Bounds(rootPoint, Vector3.zero);
-						found = true;
-					}
-					else
-					{
-						result.Encapsulate(rootPoint);
-					}
-				}
-			}
-
-			return found;
-		}
-
-		private static Bounds GetVisualBounds(GameObject root)
-		{
-			bool initialized = false;
-			Bounds result = new Bounds();
-
-			foreach (MeshFilter meshFilter in root.GetComponentsInChildren<MeshFilter>(true))
-			{
-				if (meshFilter.sharedMesh == null)
-					continue;
-
-				if (meshFilter.gameObject.name != "ironchest" &&
-					meshFilter.gameObject.name != "ironchesttop")
-					continue;
-
-				Bounds meshBounds = meshFilter.sharedMesh.bounds;
-
-				foreach (Vector3 corner in GetBoundsCorners(meshBounds))
-				{
-					Vector3 worldPoint = meshFilter.transform.TransformPoint(corner);
-					Vector3 rootPoint = root.transform.InverseTransformPoint(worldPoint);
-
-					if (!initialized)
-					{
-						result = new Bounds(rootPoint, Vector3.zero);
-						initialized = true;
-					}
-					else
-					{
-						result.Encapsulate(rootPoint);
-					}
-				}
-			}
-
-			return result;
-		}
-
-		private static Bounds ConvertBounds(Transform sourceRoot, Transform target, Bounds sourceBounds)
-		{
-			bool initialized = false;
-			Bounds result = new Bounds();
-
-			foreach (Vector3 corner in GetBoundsCorners(sourceBounds))
-			{
-				Vector3 worldPoint = sourceRoot.TransformPoint(corner);
-				Vector3 targetPoint = target.InverseTransformPoint(worldPoint);
-
-				if (!initialized)
-				{
-					result = new Bounds(targetPoint, Vector3.zero);
-					initialized = true;
-				}
-				else
-				{
-					result.Encapsulate(targetPoint);
-				}
-			}
-
-			return result;
-		}
-
-		private static IEnumerable<Vector3> GetBoundsCorners(Bounds bounds)
-		{
-			Vector3 center = bounds.center;
-			Vector3 extents = bounds.extents;
-
-			for (int x = -1; x <= 1; x += 2)
-			{
-				for (int y = -1; y <= 1; y += 2)
-				{
-					for (int z = -1; z <= 1; z += 2)
-					{
-						yield return center + Vector3.Scale(extents, new Vector3(x, y, z));
-					}
-				}
-			}
-		}
-
-		private static void LogSmartDropboxColliders(GameObject prefab)
-		{
-			foreach (Collider collider in prefab.GetComponentsInChildren<Collider>(true))
-			{
-				if (collider is BoxCollider box)
-				{
-					log.Info(
-						$"Collider | Object='{collider.gameObject.name}' | " +
-						$"Type=BoxCollider | Trigger={box.isTrigger} | " +
-						$"Center={box.center} | Size={box.size}"
-					);
-				}
-				else
-				{
-					log.Info(
-						$"Collider | Object='{collider.gameObject.name}' | " +
-						$"Type={collider.GetType().Name} | Trigger={collider.isTrigger}"
-					);
-				}
-			}
+			log.Warn($"Smart Dropbox collider created | Center={colliderBox.center} | Size={colliderBox.size}");
 		}
 
 		private static void RegisterHandoffRpc()

@@ -10,7 +10,9 @@ A. Fixes
 
 B. Updates
 -----------------------
-* Added a custom prefab and icon for the Smart Dropbox.
+* Added a custom prefab and build-menu icon for the Smart Dropbox.
+* Updated the Smart Dropbox build cost to 5 Fine Wood, 2 Copper, 2 Iron and 1 Thunderstone.
+
 
 C. New additions
 -----------------------
@@ -26,7 +28,6 @@ A. Testing
 
 B. Updates
 -------------------------------
-* Smart Dropbox custom prefab.
 
 C. New Build Pieces / Features
 -------------------------------

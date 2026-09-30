@@ -1,5 +1,11 @@
 ## <strong> 📜 Version History </strong>
 
+v1.1.1
+- **Smart Dropbox:**
+  - Replaced the inherited reinforced-chest appearance with a custom chest visual.
+  - Added a custom Smart Dropbox build-menu icon.
+  - Updated the build cost to 5 Fine Wood, 2 Copper, 2 Iron and 1 Thunderstone.
+
 v1.1.0
 - **General:** 
   - Reorganized configuration entries to remove numbered setting names and use Configuration Manager ordering instead.

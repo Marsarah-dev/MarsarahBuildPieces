@@ -1,6 +1,6 @@
 # <strong> Marsarah Build Pieces </strong>
 
-**Version:** 1.1.0  
+**Version:** 1.1.1  
 **Author:** Marsarah
 
 ---
@@ -90,7 +90,7 @@ A functional storage piece designed to make putting away gathered materials fast
 - Items are only moved to nearby supported storage that already contains the same item type.
 - Eligible containers are checked from nearest to farthest.
 - Items that cannot be moved remain inside the Smart Dropbox.
-- Build cost: **10 Fine Wood, 2 Iron, 1 Thunderstone**.
+- Build cost: **5 Fine Wood, 2 Copper, 2 Iron, 1 Thunderstone**.
 - Default search radius: **20 meters**. Configurable from **5 to 50 meters**.
 - Respects Ward/access restrictions.
 - Supports local worlds, multiplayer and dedicated servers.

@@ -1,4 +1,4 @@
-Marsarah Build Pieces v1.1.0
+Marsarah Build Pieces v1.1.1
 ================================================================
 Marsarah Build Pieces is a standalone collection of custom buildable pieces for Valheim, focused mainly on functional pieces, portals and light sources rather than large sets of architectural walls and floors.
 
@@ -100,7 +100,8 @@ Items are only moved to containers that already contain the same item type, allo
 Furniture
 
 ► Build Cost:
-Fine Wood: 10
+Fine Wood: 5
+Copper: 2
 Iron: 2
 Thunderstone: 1
 
@@ -458,6 +459,12 @@ Blaxxun-bloop - ServerSync
 
 VERSION HISTORY
 ================================================================
+
+v1.1.1
+- Smart Dropbox:
+  - Replaced the inherited reinforced-chest appearance with a custom chest visual.
+  - Added a custom build-menu icon.
+  - Updated the build cost to 5 Fine Wood, 2 Copper, 2 Iron and 1 Thunderstone.
 
 v1.1.0
 - General:

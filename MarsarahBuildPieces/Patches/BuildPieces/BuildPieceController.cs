@@ -26,6 +26,8 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				toggled &= GreenStandingBrazier.ToggleVisibility();
 				toggled &= SilverHangingBrazier.ToggleVisibility();
 				toggled &= SmallSign.ToggleVisibility();
+				toggled &= Paving.ToggleVisibility();
+
 
 				if (toggled)
 				{

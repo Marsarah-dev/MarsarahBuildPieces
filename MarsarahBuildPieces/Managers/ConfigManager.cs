@@ -246,6 +246,11 @@ namespace MarsarahBuildPieces.Managers
 				case var name when name == Configs.SmallSign.Name:
 					SmallSign.ToggleVisibility();
 					break;
+
+				case var name when name == Configs.Paving.Name:
+					Paving.ToggleVisibility();
+					break;
+
 			}
 		}
 	}

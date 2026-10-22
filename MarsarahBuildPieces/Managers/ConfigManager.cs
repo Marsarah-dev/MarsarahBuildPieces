@@ -49,6 +49,15 @@ namespace MarsarahBuildPieces.Managers
 			public int? Order;
 		}
 
+		// Config Enums
+		public static class MysticalLightWardOptions
+		{
+			public const string Off = "Off";
+			public const string LightsOnly = "Lights Only";
+			public const string LightsAndFires = "Lights & Fires";
+			public const string AllSupportedPieces = "All Supported Pieces";
+		}
+
 		public static class Configs
 		{
 			public static readonly ConfigMetadata ServerConfig = new ConfigMetadata(
@@ -89,7 +98,7 @@ namespace MarsarahBuildPieces.Managers
 
 			public static readonly ConfigMetadata MysticalLightWard = new ConfigMetadata(
 				"Mystical Light Ward",
-				"Adds a small ward starting with the Mountain biome. When built, it keeps fueled light sources within its radius permanently lit. (Toggling mid-game requires reloading the build/crafting menu)",
+				"Adds a small ward starting with the Mountain biome. Selects which lights, fires, and utility pieces remain permanently fueled within its radius. Set to Off to disable the Ward. (Toggling mid-game requires reloading the build menu)",
 				ConfigSections.BuildPieces,
 				30);
 
@@ -113,7 +122,8 @@ namespace MarsarahBuildPieces.Managers
 		public static ConfigEntry<bool> PocketPortalEnabled;
 		public static ConfigEntry<bool> GlacialStonePortalEnabled;
 		public static ConfigEntry<bool> BuildPiecesLightingEnabled;
-		public static ConfigEntry<bool> MysticalLightWardEnabled;
+		public static ConfigEntry<string> MysticalLightWardMode;
+		public static bool MysticalLightWardActive => MysticalLightWardMode != null && MysticalLightWardMode.Value != MysticalLightWardOptions.Off;
 		public static ConfigEntry<int> MysticalLightWardRadius;
 		public static ConfigEntry<bool> SmallSignEnabled;
 
@@ -129,7 +139,7 @@ namespace MarsarahBuildPieces.Managers
 			PocketPortalEnabled = CreateConfig(Configs.PocketPortal, true);
 			GlacialStonePortalEnabled = CreateConfig(Configs.GlacialStonePortal, true);
 			BuildPiecesLightingEnabled = CreateConfig(Configs.BuildPiecesLighting, true);
-			MysticalLightWardEnabled = CreateConfig(Configs.MysticalLightWard, true);
+			MysticalLightWardMode = CreateConfig(Configs.MysticalLightWard, MysticalLightWardOptions.LightsAndFires, true, new AcceptableValueList<string>(MysticalLightWardOptions.Off, MysticalLightWardOptions.LightsOnly, MysticalLightWardOptions.LightsAndFires, MysticalLightWardOptions.AllSupportedPieces));
 			MysticalLightWardRadius = CreateConfig(Configs.MysticalLightWardRadius, 32, true, new AcceptableValueRange<int>(5, 50));
 			SmallSignEnabled = CreateConfig(Configs.SmallSign, true);
 

@@ -2,6 +2,7 @@
 using MarsarahBuildPieces.Managers;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 namespace MarsarahBuildPieces.Patches.BuildPieces
 {
@@ -15,6 +16,42 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 		private static readonly Color MysticalGlowColor = new Color(0.25f, 0.55f, 1f, 1f);
 
 		internal static float EffectRadius => ConfigManager.MysticalLightWardRadius.Value;
+
+		private static bool CoversLights => ConfigManager.MysticalLightWardActive;
+
+		private static bool CoversFires =>
+			ConfigManager.MysticalLightWardMode?.Value == ConfigManager.MysticalLightWardOptions.LightsAndFires ||
+			ConfigManager.MysticalLightWardMode?.Value == ConfigManager.MysticalLightWardOptions.AllSupportedPieces;
+
+		private static bool CoversUtilities =>
+			ConfigManager.MysticalLightWardMode?.Value == ConfigManager.MysticalLightWardOptions.AllSupportedPieces;
+
+		private static bool IsFire(Fireplace fireplace, string prefabName)
+		{
+			string pieceName = fireplace.GetComponent<Piece>()?.m_name;
+
+			if (pieceName == "$piece_firepit" || pieceName == "$piece_firepit_iron" ||
+				pieceName == "$piece_hearth" || pieceName == "$piece_bonfire")
+				return true;
+
+			return prefabName.IndexOf("fire_pit", StringComparison.OrdinalIgnoreCase) >= 0 ||
+				prefabName.IndexOf("firepit", StringComparison.OrdinalIgnoreCase) >= 0 ||
+				prefabName.IndexOf("hearth", StringComparison.OrdinalIgnoreCase) >= 0 ||
+				prefabName.IndexOf("bonfire", StringComparison.OrdinalIgnoreCase) >= 0;
+		}
+
+		private static void Refill(ZNetView nview, float maxFuel)
+		{
+			if (nview == null || !nview.IsOwner() || maxFuel <= 0f)
+				return;
+
+			ZDO zdo = nview.GetZDO();
+
+			if (zdo == null || zdo.GetFloat("fuel", 0f) >= maxFuel)
+				return;
+
+			zdo.Set("fuel", maxFuel);
+		}
 
 		[HarmonyPatch(typeof(ZNetScene), "Awake")]
 		public static class ZNetScene_Awake_Patch
@@ -33,8 +70,8 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 		[HarmonyPatch(typeof(Fireplace), "UpdateFireplace")]
 		private static class Fireplace_UpdateFireplace_Patch
 		{
-			// This makes fuel burn faster. Meant for testing.
-			/*private static bool burnSpeedLogged;
+			// Temporary testing: 3 seconds per fuel.
+			private static bool burnSpeedLogged;
 
 			private static void Prefix(Fireplace __instance)
 			{
@@ -42,24 +79,92 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 				if (!burnSpeedLogged)
 				{
-					log.Info("Temporary testing: fireplace fuel burn time set to 3 seconds per fuel.");
+					log.Info("Temporary testing: Fireplace fuel burn time set to 3 seconds per fuel.");
 					burnSpeedLogged = true;
 				}
-			}*/
+			}
 
-			private static void Postfix(Fireplace __instance, ref ZNetView ___m_nview)
+			private static void Postfix(Fireplace __instance, ZNetView ___m_nview)
 			{
-				if (___m_nview == null || !___m_nview.IsOwner())
+				if (!CoversLights)
+					return;
+
+				string prefabName = Utils.GetPrefabName(__instance.gameObject);
+				bool isFire = IsFire(__instance, prefabName);
+
+				if (isFire && !CoversFires)
 					return;
 
 				if (!IsInsideActiveWard(__instance.transform.position))
 					return;
 
-				ZDO zdo = ___m_nview.GetZDO();
-				if (zdo == null)
+				Refill(___m_nview, __instance.m_maxFuel);
+			}
+		}
+
+		// Stone Oven: CookingStation with its own wood fuel.
+		[HarmonyPatch(typeof(CookingStation), "UpdateCooking")]
+		private static class CookingStation_UpdateCooking_Patch
+		{
+			// Temporary testing: 3 seconds per fuel.
+			private static bool ovenBurnSpeedLogged;
+
+			private static void Prefix(CookingStation __instance)
+			{
+				if (Utils.GetPrefabName(__instance.gameObject) != "piece_oven")
 					return;
 
-				zdo.Set("fuel", __instance.m_maxFuel);
+				__instance.m_secPerFuel = 3;
+
+				if (!ovenBurnSpeedLogged)
+				{
+					log.Info("Temporary testing: Stone Oven fuel burn time set to 3 seconds.");
+					ovenBurnSpeedLogged = true;
+				}
+			}
+
+			private static void Postfix(CookingStation __instance, ZNetView ___m_nview)
+			{
+				if (!CoversUtilities || !__instance.m_useFuel || Utils.GetPrefabName(__instance.gameObject) != "piece_oven")
+					return;
+
+				if (!IsInsideActiveWard(__instance.transform.position))
+					return;
+
+				Refill(___m_nview, __instance.m_maxFuel);
+			}
+		}
+
+		// Hot Tub: internally uses a Smelter.
+		[HarmonyPatch(typeof(Smelter), "UpdateSmelter")]
+		private static class Smelter_UpdateSmelter_Patch
+		{
+			// Temporary testing: 3 seconds per fuel.
+			private static bool hotTubBurnSpeedLogged;
+
+			private static void Prefix(Smelter __instance)
+			{
+				if (Utils.GetPrefabName(__instance.gameObject) != "piece_bathtub")
+					return;
+
+				__instance.m_secPerProduct = 3f;
+
+				if (!hotTubBurnSpeedLogged)
+				{
+					log.Info("Temporary testing: Hot Tub fuel burn time set to 3 seconds.");
+					hotTubBurnSpeedLogged = true;
+				}
+			}
+
+			private static void Postfix(Smelter __instance, ZNetView ___m_nview)
+			{
+				if (!CoversUtilities || Utils.GetPrefabName(__instance.gameObject) != "piece_bathtub")
+					return;
+
+				if (!IsInsideActiveWard(__instance.transform.position))
+					return;
+
+				Refill(___m_nview, __instance.m_maxFuel);
 			}
 		}
 
@@ -118,12 +223,12 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			PrivateArea privateArea = prefab.GetComponent<PrivateArea>();
 			if (privateArea != null)
 			{
-				Object.DestroyImmediate(privateArea);
+				UnityEngine.Object.DestroyImmediate(privateArea);
 			}
 
 			foreach (GuidePoint guidePoint in prefab.GetComponentsInChildren<GuidePoint>(true))
 			{
-				Object.DestroyImmediate(guidePoint);
+				UnityEngine.Object.DestroyImmediate(guidePoint);
 			}
 
 			log.Info("Removed normal Ward behavior and tutorial from Mystical Light Ward.");
@@ -149,7 +254,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			piece.m_enabled = true;
 			piece.m_name = "Mystical Light Ward";
-			piece.m_description = "Keeps fueled light sources burning within its area.";
+			piece.m_description = "Keeps selected lights, fires, and utility pieces permanently fueled within its radius.";
 
 			GameObject workbenchPrefab = MPrefabManager.GetPrefab("piece_workbench");
 			if (workbenchPrefab != null)
@@ -233,7 +338,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 		public static bool ToggleVisibility()
 		{
-			bool enabled = ConfigManager.MysticalLightWardEnabled.Value;
+			bool enabled = ConfigManager.MysticalLightWardActive;
 
 			SetVisualState(MysticalWardPrefab, enabled);
 
@@ -253,7 +358,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			activeWards.Add(ward);
 
-			SetVisualState(ward.gameObject, ConfigManager.MysticalLightWardEnabled.Value);
+			SetVisualState(ward.gameObject, ConfigManager.MysticalLightWardActive);
 
 			log.Info($"Registered Mystical Light Ward area at {ward.transform.position}.");
 		}
@@ -268,7 +373,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 		public static bool IsInsideActiveWard(Vector3 position)
 		{
-			if (!ConfigManager.MysticalLightWardEnabled.Value)
+			if (!ConfigManager.MysticalLightWardActive)
 				return false;
 
 			float radiusSquared = EffectRadius * EffectRadius;
@@ -449,10 +554,10 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 		public string GetHoverText()
 		{
-			if (!ConfigManager.MysticalLightWardEnabled.Value)
+			if (!ConfigManager.MysticalLightWardActive)
 				return "Mystical Light Ward\nThe mystical energy of this ward is dormant.";
 
-			return $"Mystical Light Ward\nKeeps fueled light sources permanently lit within {MysticalLightWard.EffectRadius:0}m.";
+			return $"Mystical Light Ward\nMode: {ConfigManager.MysticalLightWardMode.Value}\nKeeps supported pieces fueled within {MysticalLightWard.EffectRadius:0}m.";
 		}
 
 		public float GetHoverOffset()

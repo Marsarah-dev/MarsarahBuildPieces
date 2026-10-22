@@ -91,7 +91,7 @@ namespace MarsarahBuildPieces.Managers
 					if (args.ChangedSetting == tweaksPermanentLights)
 						OnPermanentLightsChanged();
 				};
-				ConfigManager.MysticalLightWardEnabled.SettingChanged += (_, __) => OnMysticalLightWardChanged();
+				ConfigManager.MysticalLightWardMode.SettingChanged += (_, __) => OnMysticalLightWardChanged();
 			}
 
 			if (tweaksBrighterLanterns != null)
@@ -157,7 +157,7 @@ namespace MarsarahBuildPieces.Managers
 
 		private static void HandleInitialPermanentLightsConflict()
 		{
-			if (!ConfigManager.MysticalLightWardEnabled.Value || !PermanentLightsEnabled)
+			if (!ConfigManager.MysticalLightWardActive || !PermanentLightsEnabled)
 				return;
 
 			log.Warn("MarsarahTweaks Permanent Lights and Mystical Light Ward are both enabled. Disabling Permanent Lights.");
@@ -167,11 +167,11 @@ namespace MarsarahBuildPieces.Managers
 
 		private static void OnPermanentLightsChanged()
 		{
-			if (PermanentLightsEnabled && ConfigManager.MysticalLightWardEnabled.Value)
+			if (PermanentLightsEnabled && ConfigManager.MysticalLightWardActive)
 			{
 				log.Warn("MarsarahTweaks Permanent Lights enabled. Disabling Mystical Light Ward.");
 
-				ConfigManager.MysticalLightWardEnabled.Value = false;
+				ConfigManager.MysticalLightWardMode.Value = ConfigManager.MysticalLightWardOptions.Off;
 			}
 
 			RefreshLightRequirements();
@@ -179,7 +179,7 @@ namespace MarsarahBuildPieces.Managers
 
 		private static void OnMysticalLightWardChanged()
 		{
-			if (!ConfigManager.MysticalLightWardEnabled.Value || !PermanentLightsEnabled)
+			if (!ConfigManager.MysticalLightWardActive || !PermanentLightsEnabled)
 				return;
 
 			log.Warn("Mystical Light Ward enabled. Disabling MarsarahTweaks Permanent Lights.");

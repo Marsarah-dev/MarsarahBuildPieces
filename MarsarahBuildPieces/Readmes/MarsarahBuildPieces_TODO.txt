@@ -26,6 +26,7 @@ A. Fixes
 
 B. Updates
 -------------------------------
+* Make the Mystical Light Ward piece individually togglable in game with an interaction in game. 
 
 C. New Build Pieces / Features
 -------------------------------

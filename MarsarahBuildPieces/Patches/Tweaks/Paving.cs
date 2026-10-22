@@ -1,11 +1,13 @@
 ﻿
 using HarmonyLib;
 using Jotunn.Configs;
+using Jotunn.Managers;
 using MarsarahBuildPieces.Managers;
+using MarsarahBuildPieces.Patches.BuildPieces;
 using System;
 using UnityEngine;
 
-namespace MarsarahBuildPieces.Patches.BuildPieces
+namespace MarsarahBuildPieces.Patches.Tweaks
 {
 	internal static class Paving
 	{
@@ -102,12 +104,73 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			// Empty requirements preserve those cloned from vanilla Paved Road.
 			BuildPieceController.ConfigurePiece(PavingPrefab, "Misc", Array.Empty<RequirementConfig>(), HoePrefabName);
 
+			PieceManager.OnPiecesRegistered -= OnPiecesRegistered;
+			PieceManager.OnPiecesRegistered += OnPiecesRegistered;
+
 			log.Info($"Paving prefab registered. ActiveSelf={PavingPrefab.activeSelf}, ActiveInHierarchy={PavingPrefab.activeInHierarchy}.");
 		}
 
 		public static bool ToggleVisibility()
 		{
-			return BuildPieceController.TogglePiece(PavingPrefab?.GetComponent<Piece>(), ConfigManager.PavingEnabled.Value, log, HoePrefabName);
+			bool toggled = BuildPieceController.TogglePiece(PavingPrefab?.GetComponent<Piece>(), ConfigManager.PavingEnabled.Value, log, HoePrefabName);
+
+			if (toggled && ConfigManager.PavingEnabled.Value)
+				MovePavingAfterPavedRoad();
+
+			return toggled;
+		}
+
+		private static void OnPiecesRegistered()
+		{
+			if (PavingPrefab == null || ObjectDB.instance == null)
+				return;
+
+			// Jotunn retries TerrainOp registration now that ObjectDB is ready.
+			MPrefabManager.RegisterToZNetScene(PavingPrefab);
+
+			int prefabHash = ObjectDB.instance.GetPrefabHash(PavingPrefab);
+			TerrainOp terrainOp = PavingPrefab.GetComponent<TerrainOp>();
+
+			if (!ObjectDB.instance.m_terrainOpsByHash.TryGetValue(prefabHash, out TerrainOp registeredOp) || registeredOp != terrainOp)
+			{
+				log.Error($"Paving TerrainOp registration failed for hash {prefabHash}.");
+				return;
+			}
+
+			log.Info($"Paving TerrainOp registered successfully with hash {prefabHash}.");
+
+			MovePavingAfterPavedRoad();
+		}
+
+		private static void MovePavingAfterPavedRoad()
+		{
+			if (PavingPrefab == null || ObjectDB.instance == null)
+				return;
+
+			GameObject hoePrefab = ObjectDB.instance.GetItemPrefab(HoePrefabName);
+			PieceTable hoeTable = hoePrefab?.GetComponent<ItemDrop>()?.m_itemData?.m_shared?.m_buildPieces;
+
+			if (hoeTable == null)
+			{
+				log.Warn("Could not reorder Paving: Hoe PieceTable is unavailable.");
+				return;
+			}
+
+			int sourceIndex = hoeTable.m_pieces.FindIndex(prefab => prefab != null && prefab.name == SourcePrefabName);
+			int pavingIndex = hoeTable.m_pieces.IndexOf(PavingPrefab);
+
+			if (sourceIndex < 0 || pavingIndex < 0)
+				return;
+
+			if (pavingIndex == sourceIndex + 1)
+				return;
+
+			hoeTable.m_pieces.RemoveAt(pavingIndex);
+
+			sourceIndex = hoeTable.m_pieces.FindIndex(prefab => prefab != null && prefab.name == SourcePrefabName);
+			hoeTable.m_pieces.Insert(sourceIndex + 1, PavingPrefab);
+
+			log.Info("Moved Paving immediately after Paved Road in the Hoe menu.");
 		}
 	}
 }

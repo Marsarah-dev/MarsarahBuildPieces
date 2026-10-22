@@ -3,6 +3,7 @@ using BepInEx.Configuration;
 using ServerSync;
 using System.IO;
 using MarsarahBuildPieces.Patches.BuildPieces;
+using MarsarahBuildPieces.Patches.Tweaks;
 
 namespace MarsarahBuildPieces.Managers
 {
@@ -250,7 +251,6 @@ namespace MarsarahBuildPieces.Managers
 				case var name when name == Configs.Paving.Name:
 					Paving.ToggleVisibility();
 					break;
-
 			}
 		}
 	}

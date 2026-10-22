@@ -79,22 +79,26 @@ namespace MarsarahBuildPieces.Managers
 				return;
 			}
 
-			if (znetScene.GetPrefab(prefab.name) != null)
+
+			GameObject existingPrefab = znetScene.GetPrefab(prefab.name);
+
+			if (existingPrefab != null && existingPrefab != prefab)
 			{
-				log.Warn($"Prefab '{prefab.name}' already registered in ZNetScene.");
+				log.Error($"A different prefab named '{prefab.name}' is already registered in ZNetScene.");
 				return;
 			}
 
 			PrefabManager.Instance.RegisterToZNetScene(prefab);
 
-			if (GetPrefab(prefab.name) == null)
+			if (znetScene.GetPrefab(prefab.name) != prefab)
 			{
 				log.Error($"Failed to register prefab '{prefab.name}'.");
 			}
-			else
+			else if (existingPrefab == null)
 			{
 				log.Info($"Registered prefab '{prefab.name}' to ZNetScene.");
 			}
+
 		}
 
 		public static void RegisterItem(GameObject prefab)

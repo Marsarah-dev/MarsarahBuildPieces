@@ -104,6 +104,13 @@ namespace MarsarahBuildPieces.Managers
 				"Adds a smaller version of the wooden sign to the build menu. (Toggling mid-game requires reloading the build/crafting menu)", 
 				ConfigSections.BuildPieces, 
 				10);
+
+			public static readonly ConfigMetadata Paving = new ConfigMetadata(
+				"Paving",
+				"Adds a Paving option to the Hoe that creates paved ground without leveling, raising, or smoothing the terrain. Uses the same requirements as Paved Road. (Toggling mid-game requires reloading the Hoe build menu)",
+				ConfigSections.BuildPieces,
+				5);
+
 		}
 
 		public static ConfigEntry<bool> ServerConfigLocked;
@@ -116,6 +123,8 @@ namespace MarsarahBuildPieces.Managers
 		public static ConfigEntry<bool> MysticalLightWardEnabled;
 		public static ConfigEntry<int> MysticalLightWardRadius;
 		public static ConfigEntry<bool> SmallSignEnabled;
+		public static ConfigEntry<bool> PavingEnabled;
+
 
 		public static void Init(ConfigFile configFile)
 		{
@@ -132,6 +141,8 @@ namespace MarsarahBuildPieces.Managers
 			MysticalLightWardEnabled = CreateConfig(Configs.MysticalLightWard, true);
 			MysticalLightWardRadius = CreateConfig(Configs.MysticalLightWardRadius, 32, true, new AcceptableValueRange<int>(5, 50));
 			SmallSignEnabled = CreateConfig(Configs.SmallSign, true);
+			PavingEnabled = CreateConfig(Configs.Paving, true);
+
 
 			SetupWatcher();
 

@@ -28,7 +28,7 @@ After completing the Deep North, I plan to review its build pieces and other rel
 AI USAGE DISCLOSURE:
 The original build-piece features came from my MarsarahMod / Marsarah Tweaks projects. AI tools were later used to assist with porting and are now used as part of my development workflow for tasks such as debugging, refactoring, compatibility updates, researching game API changes, and documentation.
 
-Development remains human-directed: I decide what features are added, how they should behave, and I write code, review and test the changes included in releases. The mod's logo was also created using generative AI.
+Development remains human-directed: I decide what features are added, how they should behave, and I write code, review and test the changes included in releases. The mod's logo and some custom visual assets, such as build-menu icons, were created using generative AI.
 
 
 RELATED MARSARAH MODS

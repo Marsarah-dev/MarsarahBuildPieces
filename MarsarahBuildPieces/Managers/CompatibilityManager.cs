@@ -2,6 +2,7 @@
 using BepInEx.Configuration;
 using MarsarahBuildPieces.Patches.BuildPieces;
 using System.Collections.Generic;
+using System;
 
 namespace MarsarahBuildPieces.Managers
 {
@@ -12,13 +13,27 @@ namespace MarsarahBuildPieces.Managers
 		private const string TweaksGuid = "Marsarah.MarsarahTweaks";
 
 		private static ConfigEntry<bool> tweaksBuildPieceAmounts;
-		private static ConfigEntry<bool> tweaksPermanentLights;
+		private static ConfigEntryBase tweaksPermanentLights;
 		private static ConfigEntry<bool> tweaksBrighterLanterns;
 
 		public static bool TweaksLoaded { get; private set; }
 
 		public static bool BuildPieceAmountsEnabled => TweaksLoaded && tweaksBuildPieceAmounts?.Value == true;
-		public static bool PermanentLightsEnabled => TweaksLoaded && tweaksPermanentLights?.Value == true;
+		public static bool PermanentLightsEnabled
+		{
+			get
+			{
+				if (!TweaksLoaded || tweaksPermanentLights == null)
+					return false;
+
+				object value = tweaksPermanentLights.BoxedValue;
+
+				if (value is bool legacyValue)
+					return legacyValue;
+
+				return value != null && !string.Equals(value.ToString(), "Off", StringComparison.OrdinalIgnoreCase);
+			}
+		}
 		public static bool BrighterLanternsEnabled => TweaksLoaded && tweaksBrighterLanterns?.Value == true;
 
 		private static readonly Dictionary<string, string> LoadedMods = new Dictionary<string, string>();
@@ -61,7 +76,7 @@ namespace MarsarahBuildPieces.Managers
 			ConfigFile tweaksConfig = pluginInfo.Instance.Config;
 
 			tweaksBuildPieceAmounts = GetBoolConfig(tweaksConfig, "2 - Grind Reduction (Synced with Server)", "Cheaper Build Pieces Amounts");
-			tweaksPermanentLights = GetBoolConfig(tweaksConfig, "5 - QOL (Synced with Server)", "Permanent Lights");
+			tweaksPermanentLights = GetAnyConfig(tweaksConfig, "5 - QOL (Synced with Server)", "Permanent Lights");
 			tweaksBrighterLanterns = GetBoolConfig(tweaksConfig, "4 - Features (Synced with Server)", "Brighter Lanterns");
 
 			if (tweaksBuildPieceAmounts != null)
@@ -71,7 +86,11 @@ namespace MarsarahBuildPieces.Managers
 			{
 				HandleInitialPermanentLightsConflict();
 
-				tweaksPermanentLights.SettingChanged += (_, __) => OnPermanentLightsChanged();
+				tweaksConfig.SettingChanged += (_, args) =>
+				{
+					if (args.ChangedSetting == tweaksPermanentLights)
+						OnPermanentLightsChanged();
+				};
 				ConfigManager.MysticalLightWardEnabled.SettingChanged += (_, __) => OnMysticalLightWardChanged();
 			}
 
@@ -90,6 +109,27 @@ namespace MarsarahBuildPieces.Managers
 
 			log.Warn($"Could not find MarsarahTweaks config '{section} / {key}'.");
 			return null;
+		}
+
+		private static ConfigEntryBase GetAnyConfig(ConfigFile config, string section, string key)
+		{
+			foreach (KeyValuePair<ConfigDefinition, ConfigEntryBase> entry in config)
+			{
+				if (entry.Key.Section == section && entry.Key.Key == key)
+					return entry.Value;
+			}
+
+			log.Warn($"Could not find MarsarahTweaks config '{section} / {key}'.");
+			return null;
+		}
+
+		private static void DisablePermanentLights()
+		{
+			if (!PermanentLightsEnabled || tweaksPermanentLights == null)
+				return;
+
+			string value = tweaksPermanentLights.SettingType == typeof(bool) ? "false" : "Off";
+			tweaksPermanentLights.SetSerializedValue(value);
 		}
 
 		private static void RefreshLightRequirements()
@@ -117,17 +157,17 @@ namespace MarsarahBuildPieces.Managers
 
 		private static void HandleInitialPermanentLightsConflict()
 		{
-			if (!ConfigManager.MysticalLightWardEnabled.Value || tweaksPermanentLights?.Value != true)
+			if (!ConfigManager.MysticalLightWardEnabled.Value || !PermanentLightsEnabled)
 				return;
 
 			log.Warn("MarsarahTweaks Permanent Lights and Mystical Light Ward are both enabled. Disabling Permanent Lights.");
 
-			tweaksPermanentLights.Value = false;
+			DisablePermanentLights();
 		}
 
 		private static void OnPermanentLightsChanged()
 		{
-			if (tweaksPermanentLights.Value && ConfigManager.MysticalLightWardEnabled.Value)
+			if (PermanentLightsEnabled && ConfigManager.MysticalLightWardEnabled.Value)
 			{
 				log.Warn("MarsarahTweaks Permanent Lights enabled. Disabling Mystical Light Ward.");
 
@@ -139,12 +179,12 @@ namespace MarsarahBuildPieces.Managers
 
 		private static void OnMysticalLightWardChanged()
 		{
-			if (!ConfigManager.MysticalLightWardEnabled.Value || tweaksPermanentLights?.Value != true)
+			if (!ConfigManager.MysticalLightWardEnabled.Value || !PermanentLightsEnabled)
 				return;
 
 			log.Warn("Mystical Light Ward enabled. Disabling MarsarahTweaks Permanent Lights.");
 
-			tweaksPermanentLights.Value = false;
+			DisablePermanentLights();
 		}
 
 		private static void UpdateConflictMod(ref ConflictMod mod)

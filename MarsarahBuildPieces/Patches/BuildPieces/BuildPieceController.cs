@@ -58,7 +58,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			log.Info($"Registered prefab '{prefab.name}' in '{toolName}' build menu under '{category}'.");
 		}
 
-
 		public static RequirementConfig MakeRequirement(string item, int amount, bool recover = true)
 		{
 			return new RequirementConfig(item, amount, recover: recover);
@@ -136,6 +135,5 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			return true;
 		}
-
 	}
 }

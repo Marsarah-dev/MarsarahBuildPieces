@@ -13,8 +13,6 @@ B. Updates
 
 C. New additions
 -----------------------
-* Working on:
-  - Hoe Stone Pathing
 
 
 

@@ -1,7 +1,6 @@
 ﻿using HarmonyLib;
 using Jotunn.Configs;
 using MarsarahBuildPieces.Managers;
-using MarsarahBuildPieces.Patches.Tweaks;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -9,7 +8,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 {
 	internal static class BuildPieceController
 	{
-		private static readonly LogManager log = new LogManager("Build Piece Controller", LogManager.LogLevel.Info);
+		private static readonly LogManager log = new LogManager("Build Piece Controller", LogManager.LogLevel.Warning);
 
 		[HarmonyPatch(typeof(Player), "OnSpawned")]
 		internal static class Player_OnSpawned_Patch
@@ -27,8 +26,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				toggled &= GreenStandingBrazier.ToggleVisibility();
 				toggled &= SilverHangingBrazier.ToggleVisibility();
 				toggled &= SmallSign.ToggleVisibility();
-				toggled &= Paving.ToggleVisibility();
-
 
 				if (toggled)
 				{
@@ -41,7 +38,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			}
 		}
 
-		public static void ConfigurePiece(GameObject prefab, string category, RequirementConfig[] requirements, string toolName = "Hammer")
+		public static void ConfigurePiece(GameObject prefab, string category, RequirementConfig[] requirements)
 		{
 			if (prefab == null)
 			{
@@ -51,14 +48,14 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			PieceConfig pieceConfig = new PieceConfig
 			{
-				PieceTable = toolName,
+				PieceTable = "Hammer",
 				Category = category,
 				Requirements = requirements
 			};
 
 			MPrefabManager.AddToBuildMenu(prefab, pieceConfig);
 
-			log.Info($"Registered prefab '{prefab.name}' in '{toolName}' build menu under '{category}'.");
+			log.Info($"Registered prefab '{prefab.name}' in build menu under '{category}'.");
 		}
 
 		public static RequirementConfig MakeRequirement(string item, int amount, bool recover = true)
@@ -96,7 +93,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			}
 		}
 
-		public static bool TogglePiece(Piece piece, bool enabled, LogManager specificLog, string toolName = "Hammer")
+		public static bool TogglePiece(Piece piece, bool enabled, LogManager specificLog)
 		{
 			if (piece == null)
 				return false;
@@ -107,33 +104,27 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				return false;
 			}
 
-			GameObject toolPrefab = ObjectDB.instance.GetItemPrefab(toolName);
-			if (toolPrefab == null)
-			{
-				specificLog.Warn($"Could not find tool prefab '{toolName}'.");
+			GameObject hammerPrefab = ObjectDB.instance.GetItemPrefab("Hammer");
+			if (hammerPrefab == null)
 				return false;
-			}
 
-			ItemDrop toolItem = toolPrefab.GetComponent<ItemDrop>();
-			PieceTable pieceTable = toolItem?.m_itemData?.m_shared?.m_buildPieces;
+			ItemDrop hammerItem = hammerPrefab.GetComponent<ItemDrop>();
+			PieceTable hammer = hammerItem?.m_itemData?.m_shared?.m_buildPieces;
 
-			if (pieceTable == null)
-			{
-				specificLog.Warn($"Could not find PieceTable for '{toolName}'.");
+			if (hammer == null)
 				return false;
-			}
 
 			piece.m_enabled = enabled;
 
 			if (enabled)
 			{
-				if (!pieceTable.m_pieces.Contains(piece.gameObject))
-					pieceTable.m_pieces.Add(piece.gameObject);
+				if (!hammer.m_pieces.Contains(piece.gameObject))
+					hammer.m_pieces.Add(piece.gameObject);
 			}
 			else
 			{
-				if (pieceTable.m_pieces.Contains(piece.gameObject))
-					pieceTable.m_pieces.Remove(piece.gameObject);
+				if (hammer.m_pieces.Contains(piece.gameObject))
+					hammer.m_pieces.Remove(piece.gameObject);
 			}
 
 			return true;

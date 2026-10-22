@@ -8,7 +8,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 {
 	internal static class BuildPieceController
 	{
-		private static readonly LogManager log = new LogManager("Build Piece Controller", LogManager.LogLevel.Warning);
+		private static readonly LogManager log = new LogManager("Build Piece Controller", LogManager.LogLevel.Info);
 
 		[HarmonyPatch(typeof(Player), "OnSpawned")]
 		internal static class Player_OnSpawned_Patch
@@ -38,7 +38,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			}
 		}
 
-		public static void ConfigurePiece(GameObject prefab, string category, RequirementConfig[] requirements)
+		public static void ConfigurePiece(GameObject prefab, string category, RequirementConfig[] requirements, string toolName = "Hammer")
 		{
 			if (prefab == null)
 			{
@@ -48,15 +48,16 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			PieceConfig pieceConfig = new PieceConfig
 			{
-				PieceTable = "Hammer",
+				PieceTable = toolName,
 				Category = category,
 				Requirements = requirements
 			};
 
 			MPrefabManager.AddToBuildMenu(prefab, pieceConfig);
 
-			log.Info($"Registered prefab '{prefab.name}' in build menu under '{category}'.");
+			log.Info($"Registered prefab '{prefab.name}' in '{toolName}' build menu under '{category}'.");
 		}
+
 
 		public static RequirementConfig MakeRequirement(string item, int amount, bool recover = true)
 		{
@@ -93,7 +94,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			}
 		}
 
-		public static bool TogglePiece(Piece piece, bool enabled, LogManager specificLog)
+		public static bool TogglePiece(Piece piece, bool enabled, LogManager specificLog, string toolName = "Hammer")
 		{
 			if (piece == null)
 				return false;
@@ -104,30 +105,37 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				return false;
 			}
 
-			GameObject hammerPrefab = ObjectDB.instance.GetItemPrefab("Hammer");
-			if (hammerPrefab == null)
+			GameObject toolPrefab = ObjectDB.instance.GetItemPrefab(toolName);
+			if (toolPrefab == null)
+			{
+				specificLog.Warn($"Could not find tool prefab '{toolName}'.");
 				return false;
+			}
 
-			ItemDrop hammerItem = hammerPrefab.GetComponent<ItemDrop>();
-			PieceTable hammer = hammerItem?.m_itemData?.m_shared?.m_buildPieces;
+			ItemDrop toolItem = toolPrefab.GetComponent<ItemDrop>();
+			PieceTable pieceTable = toolItem?.m_itemData?.m_shared?.m_buildPieces;
 
-			if (hammer == null)
+			if (pieceTable == null)
+			{
+				specificLog.Warn($"Could not find PieceTable for '{toolName}'.");
 				return false;
+			}
 
 			piece.m_enabled = enabled;
 
 			if (enabled)
 			{
-				if (!hammer.m_pieces.Contains(piece.gameObject))
-					hammer.m_pieces.Add(piece.gameObject);
+				if (!pieceTable.m_pieces.Contains(piece.gameObject))
+					pieceTable.m_pieces.Add(piece.gameObject);
 			}
 			else
 			{
-				if (hammer.m_pieces.Contains(piece.gameObject))
-					hammer.m_pieces.Remove(piece.gameObject);
+				if (pieceTable.m_pieces.Contains(piece.gameObject))
+					pieceTable.m_pieces.Remove(piece.gameObject);
 			}
 
 			return true;
 		}
+
 	}
 }

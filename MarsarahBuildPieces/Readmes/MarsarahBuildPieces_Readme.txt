@@ -1,4 +1,4 @@
-Marsarah Build Pieces v1.1.1
+Marsarah Build Pieces v1.1.2
 ================================================================
 Marsarah Build Pieces is a standalone collection of custom buildable pieces for Valheim, focused mainly on functional pieces, portals and light sources rather than large sets of architectural walls and floors.
 
@@ -200,7 +200,7 @@ Smart Dropbox is automatically disabled when MultiUserChest is detected. The two
 ==================== [MYSTICAL LIGHT WARD] =====================
 
 ► Description:
-  A small blue-glowing magical Ward that keeps fueled light sources within its configured radius permanently fueled.
+  A small blue-glowing magical Ward that keeps nearby lights, fires and other fueled pieces permanently fueled according to its selected mode.
   Intended as a local and more immersive alternative to making every light in the world permanent.
 
 ► Build Category:
@@ -221,33 +221,60 @@ Smart Dropbox is automatically disabled when MultiUserChest is detected. The two
   The radius circle is visible while positioning the placement ghost.
   The circle is hidden after the Ward is placed.
 
-► Light Behavior:
-  Fueled light sources inside an active Ward's radius are refilled to their maximum fuel.
+▼ Modes:
+
+- Off
+  • Disables the Mystical Light Ward.
+  • Already placed Wards become dormant.
+
+- Lights Only
+  • Keeps torches, sconces, braziers and other decorative lights permanently fueled.
+  • Campfires, Hearths and other fires still consume fuel.
+  • Stone Ovens and Hot Tubs still consume fuel normally.
+
+- Lights & Fires (DEFAULT)
+  • Includes all decorative lights.
+  • Also keeps Campfires, Hearths, Bonfires and other fires permanently fueled.
+  • Stone Ovens and Hot Tubs still consume fuel normally.
+
+- Lights, Fires, Stoves & Hot Tubs
+  • Includes all decorative lights and fires.
+  • Also permanently fuels Stone Ovens and Hot Tubs.
+
+► Fuel Behavior:
+  Pieces covered by the selected mode are refilled to their maximum fuel while inside an active Ward's radius.
+  Pieces excluded by the selected mode continue consuming fuel normally.
   The Mystical Light Ward itself does not require fuel.
 
 ► Ward Behavior:
   The normal vanilla Ward protection/ownership behavior is removed.
   The vanilla Ward Raven tutorial is also removed from this custom piece.
-  The piece is not used like a normal Ward and instead exists only for its light-area mechanic.
+  The piece is not used like a normal Ward and instead exists only for its fuel-refilling mechanic.
 
 ► Disabled State:
   Existing placed Wards remain in the world.
-  Their light-refueling effect stops.
+  Their fuel-refilling effect stops.
   Their magical glow, particles and light effects are disabled.
   Hover text identifies the Ward as dormant.
 
+► Mid-Game Toggling:
+  Modes can be changed during gameplay.
+  Changes to fuel behavior apply to already placed Wards.
+  Toggling the mode to Off also removes the piece from the build menu.
+
 ► MarsarahTweaks Permanent Lights:
   Mystical Light Ward and Tweaks Permanent Lights are mutually exclusive.
+  Any mode other than Off counts as enabled for either feature.
 
   If both are enabled when compatibility initializes:
     - Mystical Light Ward remains enabled.
-    - Tweaks Permanent Lights is disabled.
+    - Tweaks Permanent Lights is set to Off.
 
-  If Permanent Lights is enabled later while the Ward is active:
-    - Mystical Light Ward is disabled.
+  If Tweaks Permanent Lights is enabled later while the Ward is active:
+    - Mystical Light Ward is set to Off.
 
   If Mystical Light Ward is enabled while Permanent Lights is active:
-    - Permanent Lights is disabled.
+    - Tweaks Permanent Lights is set to Off.
 
   Disabling one does not automatically re-enable the other.
 
@@ -459,6 +486,14 @@ Blaxxun-bloop - ServerSync
 
 VERSION HISTORY
 ================================================================
+
+v1.1.2
+- Mystical Light Ward:
+  - Reworked into four configurable modes: Off, Lights Only, Lights & Fires, and Lights, Fires, Stoves & Hot Tubs.
+  - Added permanent fuel support for fires, Stone Ovens and Hot Tubs, depending on the selected mode.
+  - Default mode is Lights & Fires.
+  - Updated compatibility with MarsarahTweaks' Permanent Lights dropdown configuration.
+  - Mystical Light Ward and Permanent Lights remain mutually exclusive.
 
 v1.1.1
 - Smart Dropbox:

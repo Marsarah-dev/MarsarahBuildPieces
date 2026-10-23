@@ -1,5 +1,12 @@
 ## <strong> 📜 Version History </strong>
 
+v1.1.2
+- **Mystical Light Ward:**
+  - Reworked into four configurable modes: Off, Lights Only, Lights & Fires, and Lights, Fires, Stoves & Hot Tubs.
+  - Added permanent fuel support for Campfires, Hearths, Bonfires, Stone Ovens and Hot Tubs, depending on the selected mode.
+  - Default mode is Lights & Fires.
+  - Updated compatibility with MarsarahTweaks' new Permanent Lights configuration, keeping both features mutually exclusive.
+
 v1.1.1
 - **Smart Dropbox:**
   - Replaced the inherited reinforced-chest appearance with a custom chest visual.

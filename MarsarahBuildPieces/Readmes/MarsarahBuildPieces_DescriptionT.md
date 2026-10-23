@@ -1,6 +1,6 @@
 # <strong> Marsarah Build Pieces </strong>
 
-**Version:** 1.1.1  
+**Version:** 1.1.2  
 **Author:** Marsarah
 
 ---
@@ -134,7 +134,7 @@ Enables an unused vanilla stone portal as a proper buildable portal with a cold/
 
 ### <strong>🔧 Mystical Light Ward</strong>
 
-A smaller, blue-glowing magical Ward that keeps fueled light sources inside its area permanently lit.
+A smaller, blue-glowing magical Ward that keeps nearby lights and other fueled pieces permanently fueled.
 
 - Available from Mountain-tier materials.
 - Requires a **Workbench** nearby.
@@ -145,9 +145,14 @@ A smaller, blue-glowing magical Ward that keeps fueled light sources inside its 
 - Default effect radius: **32 meters**.
 - Configurable from **5 to 50 meters**.
 - The effect radius is shown while placing the Ward and hidden after placement.
-- Refuels fueled light sources inside its radius to their maximum fuel.
+- Offers four configurable modes:
+  - **Off:** Disables the Mystical Light Ward.
+  - **Lights Only:** Keeps nearby decorative light sources fueled.
+  - **Lights & Fires:** Also includes Campfires, Hearths, Bonfires and other fires. **(Default)**
+  - **Lights, Fires, Stoves & Hot Tubs:** Also includes Stone Ovens and Hot Tubs.
+- Refuels pieces covered by the selected mode to their maximum fuel.
 - Has **no normal Ward protection/ownership behavior**.
-- Existing Wards become dormant and lose their glow/effect if the feature is disabled, rather than disappearing from the world.
+- Existing Wards become dormant and lose their glow/effect when the mode is set to Off, rather than disappearing from the world.
 
 ---
 

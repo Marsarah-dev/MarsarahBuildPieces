@@ -1,6 +1,6 @@
 [size=5][b]Marsarah Build Pieces[/b][/size]
 
-[b]Version:[/b] 1.1.1
+[b]Version:[/b] 1.1.2
 [b]Author:[/b] Marsarah
 
 [line]
@@ -117,14 +117,19 @@ A portable portal designed to make exploration more convenient.
 - Integrates with [b]MarsarahTweaks Max Portals Per Player[/b] when both mods are installed.
 
 [size=4][b]🔧 Mystical Light Ward[/b][/size]
-- A smaller blue-glowing magical Ward that keeps fueled light sources inside its area permanently lit.
+- A smaller blue-glowing magical Ward that keeps nearby lights and other fueled pieces permanently fueled.
 - Requires a [b]Workbench[/b].
 - Build cost: 2 Fine Wood, 1 Silver, 2 Obsidian.
 - Default radius: [b]32 meters[/b]. Configurable from [b]5 to 50 meters[/b].
 - Radius is shown while placing the Ward and hidden afterward.
-- Refuels fueled lights inside its radius to maximum fuel.
+- Offers four configurable modes:
+&nbsp;&nbsp;&nbsp;- [b]Off:[/b] Disables the Mystical Light Ward.
+&nbsp;&nbsp;&nbsp;- [b]Lights Only:[/b] Keeps nearby decorative light sources fueled.
+&nbsp;&nbsp;&nbsp;- [b]Lights & Fires:[/b] Also includes Campfires, Hearths, Bonfires and other fires. [b](Default)[/b]
+&nbsp;&nbsp;&nbsp;- [b]Lights, Fires, Stoves & Hot Tubs:[/b] Also includes Stone Ovens and Hot Tubs.
+- Refuels pieces covered by the selected mode to their maximum fuel.
 - Has [b]no normal Ward protection/ownership behavior[/b].
-- Existing Wards become dormant and lose their glow/effect if the feature is disabled.
+- Existing Wards become dormant and lose their glow/effect when the mode is set to Off.
 
 [size=4][b]🔧 Extra Lights[/b][/size]
 Adds [b]11 light-source build pieces[/b] across Mountain and Mistlands progression.
@@ -208,6 +213,12 @@ Thanks for checking out Marsarah Build Pieces!
 - Blaxxun-bloop - for ServerSync
 
 [size=5][b]📜 Version History[/b][/size]
+
+[size=4][b]v1.1.2[/b][/size]
+- Reworked Mystical Light Ward into four configurable modes: Off, Lights Only, Lights & Fires, and Lights, Fires, Stoves & Hot Tubs.
+- Added permanent fuel support for fires, Stone Ovens and Hot Tubs, depending on the selected mode.
+- Default mode is Lights & Fires.
+- Updated compatibility with MarsarahTweaks' Permanent Lights configuration to keep both features mutually exclusive.
 
 [size=4][b]v1.1.1[/b][/size]
 - Replaced the Smart Dropbox's inherited reinforced-chest appearance with a custom visual.

@@ -55,7 +55,7 @@ namespace MarsarahBuildPieces.Managers
 			public const string Off = "Off";
 			public const string LightsOnly = "Lights Only";
 			public const string LightsAndFires = "Lights & Fires";
-			public const string AllSupportedPieces = "All Supported Pieces";
+			public const string AllSupportedPieces = "Lights, Fires, Stoves & Hot Tubs";
 		}
 
 		public static class Configs

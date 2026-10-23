@@ -10,7 +10,9 @@ A. Fixes
 
 B. Updates
 -----------------------
-* Updated compatiblity with Marsarah Tweaks new Permanent Lights dropdown options for Mystical Light Ward exclusive toggles.
+* Mystical Light Ward 
+  - Reworked with four configurable modes (Off; Lights Only; Lights & Fires; Lights, Fires, Stoves & Hot Tubs).
+  - Updated compatiblity with Marsarah Tweaks new Permanent Lights dropdown options for Mystical Light Ward exclusive toggles.
 
 C. New additions
 -----------------------

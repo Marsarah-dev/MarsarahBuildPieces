@@ -203,9 +203,10 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			// Apply red target-found color.
 			teleport.m_colorTargetfound = PortalEmission;
 
-			// Apply visual and sound changes.
+			// Apply red portal effects.
 			RecolorPortalEffects(PocketStonePortalPrefab);
-			ApplyConnectedEffects(teleport);
+			ApplyPocketStonePortalVisuals(teleport);
+			//ApplyConnectedEffects(teleport);
 
 			// Register prefab and build piece.
 			MPrefabManager.RegisterToZNetScene(PocketStonePortalPrefab);
@@ -218,6 +219,49 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			PocketStonePortalPrefab.SetActive(true);
 
 			log.Info($"Registered '{PortalPrefabName}' with metal transport enabled.");
+		}
+		private static void ApplyPocketStonePortalVisuals(TeleportWorld teleport)
+		{
+			GameObject vanillaWoodPortal = MPrefabManager.GetPrefab("portal_wood");
+			if (vanillaWoodPortal == null)
+			{
+				log.Error("Vanilla wooden portal prefab not found.");
+				return;
+			}
+
+			// Get the original wooden portal's target-found effect.
+			Transform sourceEffect = vanillaWoodPortal.transform.Find("_target_found_red");
+			if (sourceEffect == null)
+			{
+				log.Warn("Could not find '_target_found_red' in vanilla wooden portal.");
+				return;
+			}
+
+			// Clone the complete effect hierarchy, including its child components.
+			GameObject newEffect = UnityEngine.Object.Instantiate(sourceEffect.gameObject, PocketStonePortalPrefab.transform, false);
+			newEffect.name = "_target_found_red";
+
+			EffectFade effectFade = newEffect.GetComponent<EffectFade>();
+			if (effectFade == null)
+			{
+				log.Error("Cloned target-found effect has no EffectFade component.");
+				UnityEngine.Object.DestroyImmediate(newEffect);
+				return;
+			}
+
+			// Recolor only the cloned effect's particles and lights.
+			RecolorPortalEffects(newEffect);
+
+			// Remove the original stone portal's target-found effect.
+			Transform oldEffect = PocketStonePortalPrefab.transform.Find("_target_found");
+			if (oldEffect != null)
+				UnityEngine.Object.DestroyImmediate(oldEffect.gameObject);
+
+			// Assign the new effect to our portal.
+			teleport.m_target_found = effectFade;
+			teleport.m_colorTargetfound = PortalEmission;
+
+			log.Info("Applied wooden portal target-found effect hierarchy to Pocket Stone Portal.");
 		}
 
 		private static void ApplyConnectedEffects(TeleportWorld teleport)
@@ -247,67 +291,19 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			log.Info("Pocket Stone Portal connected effects set to red-tinted vanilla portal effects.");
 		}
-
 		private static void RecolorPortalEffects(GameObject root)
 		{
-			// Recolor particle systems.
+			// Recolor particle effects only.
 			foreach (ParticleSystem particle in root.GetComponentsInChildren<ParticleSystem>(true))
 			{
 				var main = particle.main;
 				main.startColor = PortalRed;
 			}
 
-			// Recolor lights.
+			// Recolor effect lighting.
 			foreach (Light light in root.GetComponentsInChildren<Light>(true))
 			{
 				light.color = PortalRed;
-			}
-
-			// Recolor portal-related materials without modifying shared vanilla materials.
-			foreach (Renderer renderer in root.GetComponentsInChildren<Renderer>(true))
-			{
-				bool isParticle = renderer is ParticleSystemRenderer;
-
-				Material[] originalMaterials = renderer.sharedMaterials;
-				Material[] replacementMaterials = new Material[originalMaterials.Length];
-
-				bool updated = false;
-
-				for (int i = 0; i < originalMaterials.Length; i++)
-				{
-					Material original = originalMaterials[i];
-
-					if (original == null)
-					{
-						replacementMaterials[i] = null;
-						continue;
-					}
-
-					bool isPortalMaterial = original.name.IndexOf("portal", StringComparison.OrdinalIgnoreCase) >= 0;
-
-					if (!isParticle && !isPortalMaterial)
-					{
-						replacementMaterials[i] = original;
-						continue;
-					}
-
-					Material material = new Material(original);
-
-					if (material.HasProperty("_Color"))
-						material.SetColor("_Color", PortalRed);
-
-					if (material.HasProperty("_EmissionColor"))
-					{
-						material.EnableKeyword("_EMISSION");
-						material.SetColor("_EmissionColor", PortalEmission);
-					}
-
-					replacementMaterials[i] = material;
-					updated = true;
-				}
-
-				if (updated)
-					renderer.sharedMaterials = replacementMaterials;
 			}
 		}
 

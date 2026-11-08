@@ -4,6 +4,7 @@ using Jotunn.Configs;
 using MarsarahBuildPieces.Managers;
 using System;
 using UnityEngine;
+using System.Collections.Generic;
 using static EffectList;
 
 namespace MarsarahBuildPieces.Patches.BuildPieces
@@ -203,10 +204,10 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			// Apply red target-found color.
 			teleport.m_colorTargetfound = PortalEmission;
 
-			// Apply red portal effects.
+			// Apply portal effects and custom model.
 			RecolorPortalEffects(PocketStonePortalPrefab);
 			ApplyPocketStonePortalVisuals(teleport);
-			//ApplyConnectedEffects(teleport);
+			ApplyPocketStonePortalModel(PocketStonePortalPrefab);
 
 			// Register prefab and build piece.
 			MPrefabManager.RegisterToZNetScene(PocketStonePortalPrefab);
@@ -264,33 +265,105 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			log.Info("Applied wooden portal target-found effect hierarchy to Pocket Stone Portal.");
 		}
 
-		private static void ApplyConnectedEffects(TeleportWorld teleport)
+		private static void ApplyPocketStonePortalModel(GameObject prefab)
 		{
-			GameObject connectedEffect = MPrefabManager.ClonePrefab("fx_portal_connected", ConnectedEffectPrefabName);
-
-			if (connectedEffect == null)
+			GameObject visualPrefab = MAssetBundleManager.LoadPrefab("PocketStonePortalVisual");
+			if (visualPrefab == null)
 			{
-				log.Error("Failed to clone 'fx_portal_connected' for the Pocket Stone Portal.");
+				log.Error("Could not load Pocket Stone Portal visual prefab. Keeping vanilla model.");
 				return;
 			}
 
-			RecolorPortalEffects(connectedEffect);
-			MPrefabManager.RegisterToZNetScene(connectedEffect);
-
-			teleport.m_connected = new EffectList
+			// The original portal's visual hierarchy.
+			Transform originalVisuals = prefab.transform.Find("New");
+			if (originalVisuals == null)
 			{
-				m_effectPrefabs = new[]
-				{
-					new EffectData
-					{
-						m_prefab = connectedEffect,
-						m_enabled = true
-					}
-				}
-			};
+				log.Error("Could not find Pocket Stone Portal visual hierarchy 'New'.");
+				return;
+			}
 
-			log.Info("Pocket Stone Portal connected effects set to red-tinted vanilla portal effects.");
+			// Use Valheim's runtime shader instead of the Unity Editor shader.
+			Shader pieceShader = Shader.Find("Custom/Piece");
+			if (pieceShader == null)
+			{
+				log.Error("Could not resolve Custom/Piece shader. Keeping vanilla model.");
+				return;
+			}
+
+			// Capture the original renderers before adding our custom visual.
+			MeshRenderer[] originalRenderers = originalVisuals.GetComponentsInChildren<MeshRenderer>(true);
+
+			// Add the bundled visual under the original visual hierarchy.
+			GameObject customVisual = UnityEngine.Object.Instantiate(visualPrefab, originalVisuals, false);
+			customVisual.name = "PocketStonePortalVisual";
+			customVisual.transform.localPosition = Vector3.zero;
+			customVisual.transform.localRotation = Quaternion.identity;
+			customVisual.transform.localScale = Vector3.one;
+
+			MeshRenderer[] customRenderers = customVisual.GetComponentsInChildren<MeshRenderer>(true);
+			if (customRenderers.Length == 0)
+			{
+				log.Error("Custom portal visual contains no MeshRenderers. Keeping vanilla model.");
+				UnityEngine.Object.DestroyImmediate(customVisual);
+				return;
+			}
+
+			Dictionary<Material, Material> runtimeMaterials = new Dictionary<Material, Material>();
+
+			// Validate meshes and remap materials to Valheim's shader.
+			foreach (MeshRenderer renderer in customRenderers)
+			{
+				MeshFilter meshFilter = renderer.GetComponent<MeshFilter>();
+				if (meshFilter == null || meshFilter.sharedMesh == null)
+				{
+					log.Error($"Custom portal visual '{renderer.name}' has no valid mesh.");
+					UnityEngine.Object.DestroyImmediate(customVisual);
+					return;
+				}
+
+				Material[] materials = renderer.sharedMaterials;
+				for (int i = 0; i < materials.Length; i++)
+				{
+					Material sourceMaterial = materials[i];
+					if (sourceMaterial == null)
+					{
+						log.Error($"Custom portal visual '{renderer.name}' has a missing material.");
+						UnityEngine.Object.DestroyImmediate(customVisual);
+						return;
+					}
+
+					if (!runtimeMaterials.TryGetValue(sourceMaterial, out Material runtimeMaterial))
+					{
+						runtimeMaterial = new Material(pieceShader)
+						{
+							name = $"PocketStonePortal_{sourceMaterial.name}"
+						};
+
+						runtimeMaterial.CopyPropertiesFromMaterial(sourceMaterial);
+						runtimeMaterial.shader = pieceShader;
+
+						if (runtimeMaterial.HasProperty("_BumpMap") && runtimeMaterial.GetTexture("_BumpMap") != null)
+							runtimeMaterial.EnableKeyword("_NORMALMAP");
+
+						if (runtimeMaterial.HasProperty("_EmissionColor") && runtimeMaterial.GetColor("_EmissionColor").maxColorComponent > 0f)
+							runtimeMaterial.EnableKeyword("_EMISSION");
+
+						runtimeMaterials.Add(sourceMaterial, runtimeMaterial);
+					}
+
+					materials[i] = runtimeMaterial;
+				}
+
+				renderer.sharedMaterials = materials;
+			}
+
+			// Hide only the original geometry, preserving other components.
+			foreach (MeshRenderer renderer in originalRenderers)
+				renderer.enabled = false;
+
+			log.Info($"Applied Pocket Stone Portal custom model | Meshes={customRenderers.Length} | Materials={runtimeMaterials.Count}");
 		}
+
 		private static void RecolorPortalEffects(GameObject root)
 		{
 			// Recolor particle effects only.

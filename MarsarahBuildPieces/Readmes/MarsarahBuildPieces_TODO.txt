@@ -10,13 +10,10 @@ A. Fixes
 
 B. Updates
 -----------------------
-* Mystical Light Ward 
-  - Reworked with four configurable modes (Off; Lights Only; Lights & Fires; Lights, Fires, Stoves & Hot Tubs).
-  - Updated compatiblity with Marsarah Tweaks new Permanent Lights dropdown options for Mystical Light Ward exclusive toggles.
 
 C. New additions
 -----------------------
-
+* Convert my Glacial Stone Portal into a Glacial Pocket Portal. Works like the Pocket Portal, but can transport metal. Unlocked at Ashlands. Need to figure out the costs. Or maybe I add a reddish version of this and keep the Glacial Stone Portal as is. 
 
 
 ============================================================

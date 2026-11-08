@@ -80,9 +80,15 @@ namespace MarsarahBuildPieces.Managers
 
 			public static readonly ConfigMetadata PocketPortal = new ConfigMetadata(
 				"Pocket Portal",
-				"Adds a new portal that is built from a Portal Core that only takes one inventory slot, which can be crafted at a Workbench starting with the Mountain biome. Can only build one Pocket Portal per player. (Toggling mid-game requires reloading the build/crafting menu)",
+				"Adds a new portal that is built from a Portal Core that only takes one inventory slot, which can be crafted at a Workbench starting with the Mountain biome. Players can only have one portable portal placed at a time, whether it is a Pocket Portal or Pocket Stone Portal. (Toggling mid-game requires reloading the build/crafting menu)",
 				ConfigSections.BuildPieces,
 				60);
+
+			public static readonly ConfigMetadata PocketStonePortal = new ConfigMetadata(
+				"Pocket Stone Portal",
+				"Adds an Ashlands-tier portable stone portal that allows metal transport. Requires a craftable Stone Portal Core, made from a Portal Core and Ashlands resources. Players can only have one portable portal placed at a time, whether it is a Pocket Portal or Pocket Stone Portal. (Toggling mid-game requires reloading the build/crafting menu)",
+				ConfigSections.BuildPieces,
+				55);
 
 			public static readonly ConfigMetadata GlacialStonePortal = new ConfigMetadata(
 				"Glacial Stone Portal",
@@ -120,6 +126,7 @@ namespace MarsarahBuildPieces.Managers
 		public static ConfigEntry<bool> SmartDropboxEnabled;
 		public static ConfigEntry<int> SmartDropboxRadius;
 		public static ConfigEntry<bool> PocketPortalEnabled;
+		public static ConfigEntry<bool> PocketStonePortalEnabled;
 		public static ConfigEntry<bool> GlacialStonePortalEnabled;
 		public static ConfigEntry<bool> BuildPiecesLightingEnabled;
 		public static ConfigEntry<string> MysticalLightWardMode;
@@ -137,6 +144,7 @@ namespace MarsarahBuildPieces.Managers
 			SmartDropboxEnabled = CreateConfig(Configs.SmartDropbox, true);
 			SmartDropboxRadius = CreateConfig(Configs.SmartDropboxRadius, 20, true, new AcceptableValueRange<int>(5, 50));
 			PocketPortalEnabled = CreateConfig(Configs.PocketPortal, true);
+			PocketStonePortalEnabled = CreateConfig(Configs.PocketStonePortal, true);
 			GlacialStonePortalEnabled = CreateConfig(Configs.GlacialStonePortal, true);
 			BuildPiecesLightingEnabled = CreateConfig(Configs.BuildPiecesLighting, true);
 			MysticalLightWardMode = CreateConfig(Configs.MysticalLightWard, MysticalLightWardOptions.LightsAndFires, true, new AcceptableValueList<string>(MysticalLightWardOptions.Off, MysticalLightWardOptions.LightsOnly, MysticalLightWardOptions.LightsAndFires, MysticalLightWardOptions.AllSupportedPieces));
@@ -221,6 +229,11 @@ namespace MarsarahBuildPieces.Managers
 				case var name when name == Configs.PocketPortal.Name:
 					PocketPortal.TogglePocketPortalVisibility();
 					PocketPortal.TogglePortalCoreVisibility();
+					break;
+
+				case var name when name == Configs.PocketStonePortal.Name:
+					//PocketStonePortal.TogglePortalVisibility();
+					PocketStonePortal.ToggleStonePortalCoreVisibility();
 					break;
 
 				case var name when name == Configs.GlacialStonePortal.Name:

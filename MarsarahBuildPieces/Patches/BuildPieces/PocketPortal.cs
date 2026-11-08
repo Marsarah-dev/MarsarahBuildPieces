@@ -462,12 +462,13 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 		{
 			static bool Prefix(Player __instance, Piece piece, ref bool __result)
 			{
-				if (piece == null || PocketPortalPrefab == null || piece.name != PocketPortalPrefab.name) return true;
+				if (piece == null || (piece.name != "pocket_portal" && piece.name != PocketStonePortal.PortalPrefabName))
+					return true;
 
 				if (PlayerHasPocketPortal(__instance))
 				{
 					log.Info($"Blocking Pocket Portal placement for {__instance.GetPlayerName()} ({__instance.GetPlayerID()})");
-					__instance.Message(MessageHud.MessageType.Center, "You can only place one Pocket Portal.");
+					__instance.Message(MessageHud.MessageType.Center, "You can only place one Pocket Portal or Pocket Stone Portal.");
 					__result = false; // Prevent further execution
 					return false;     // Skip original method
 				}
@@ -487,6 +488,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			long playerId = player.GetPlayerID();
 			int pocketPortalHash = PocketPortalPrefab.name.GetStableHashCode();
+			int pocketStonePortalHash = PocketStonePortal.PortalPrefabName.GetStableHashCode();
 
 			var zdoDictField = typeof(ZDOMan).GetField("m_objectsByID", BindingFlags.NonPublic | BindingFlags.Instance);
 			if (zdoDictField == null)
@@ -507,7 +509,8 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			foreach (var zdo in zdoDict.Values)
 			{
 				if (zdo == null) continue;
-				if (zdo.GetPrefab() != pocketPortalHash) continue;
+				if (zdo.GetPrefab() != pocketPortalHash && zdo.GetPrefab() != pocketStonePortalHash)
+					continue;
 
 				long creatorId = zdo.GetLong(ZDOVars.s_creator, 0L);
 

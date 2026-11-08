@@ -232,7 +232,7 @@ namespace MarsarahBuildPieces.Managers
 					break;
 
 				case var name when name == Configs.PocketStonePortal.Name:
-					//PocketStonePortal.TogglePortalVisibility();
+					PocketStonePortal.TogglePortalVisibility();
 					PocketStonePortal.ToggleStonePortalCoreVisibility();
 					break;
 

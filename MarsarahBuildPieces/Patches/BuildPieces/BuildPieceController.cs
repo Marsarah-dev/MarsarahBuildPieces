@@ -19,6 +19,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 				toggled &= SmartDropbox.ToggleVisibility();
 				toggled &= PocketPortal.TogglePocketPortalVisibility();
+				toggled &= PocketStonePortal.TogglePortalVisibility();
 				toggled &= GlacialStonePortal.TogglePortalVisibility();
 				toggled &= MysticalLightWard.ToggleVisibility();
 				toggled &= SilverSconce.ToggleVisibility();

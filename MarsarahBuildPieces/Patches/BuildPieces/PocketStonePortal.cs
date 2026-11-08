@@ -270,67 +270,97 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			GameObject visualPrefab = MAssetBundleManager.LoadPrefab("PocketStonePortalVisual");
 			if (visualPrefab == null)
 			{
-				log.Error("Could not load Pocket Stone Portal visual prefab. Keeping vanilla model.");
+				log.Error("Could not load Pocket Stone Portal visual prefab.");
 				return;
 			}
 
-			// The original portal's visual hierarchy.
 			Transform originalVisuals = prefab.transform.Find("New");
 			if (originalVisuals == null)
 			{
-				log.Error("Could not find Pocket Stone Portal visual hierarchy 'New'.");
+				log.Error("Could not find original Pocket Stone Portal visual hierarchy.");
 				return;
 			}
 
-			// Use Valheim's runtime shader instead of the Unity Editor shader.
-			Shader pieceShader = Shader.Find("Custom/Piece");
+			Shader pieceShader = null;
+
+			// Get the shader directly from the original vanilla portal.
+			foreach (MeshRenderer originalRenderer in originalVisuals.GetComponentsInChildren<MeshRenderer>(true))
+			{
+				Material originalMaterial = originalRenderer.sharedMaterial;
+
+				if (originalMaterial == null || originalMaterial.shader == null)
+					continue;
+
+				pieceShader = originalMaterial.shader;
+				log.Info($"Using original portal shader: {pieceShader.name}");
+				break;
+			}
+
 			if (pieceShader == null)
 			{
-				log.Error("Could not resolve Custom/Piece shader. Keeping vanilla model.");
+				log.Error("Could not resolve the original portal's runtime shader. Keeping vanilla model.");
 				return;
 			}
 
-			// Capture the original renderers before adding our custom visual.
-			MeshRenderer[] originalRenderers = originalVisuals.GetComponentsInChildren<MeshRenderer>(true);
-
-			// Add the bundled visual under the original visual hierarchy.
-			GameObject customVisual = UnityEngine.Object.Instantiate(visualPrefab, originalVisuals, false);
-			customVisual.name = "PocketStonePortalVisual";
-			customVisual.transform.localPosition = Vector3.zero;
-			customVisual.transform.localRotation = Quaternion.identity;
-			customVisual.transform.localScale = Vector3.one;
-
-			MeshRenderer[] customRenderers = customVisual.GetComponentsInChildren<MeshRenderer>(true);
-			if (customRenderers.Length == 0)
+			MeshFilter[] sourceMeshes = visualPrefab.GetComponentsInChildren<MeshFilter>(true);
+			if (sourceMeshes.Length == 0)
 			{
-				log.Error("Custom portal visual contains no MeshRenderers. Keeping vanilla model.");
-				UnityEngine.Object.DestroyImmediate(customVisual);
+				log.Error("Pocket Stone Portal visual prefab contains no meshes.");
 				return;
 			}
 
-			Dictionary<Material, Material> runtimeMaterials = new Dictionary<Material, Material>();
-
-			// Validate meshes and remap materials to Valheim's shader.
-			foreach (MeshRenderer renderer in customRenderers)
+			// Validate the source prefab before modifying the original portal.
+			foreach (MeshFilter sourceMesh in sourceMeshes)
 			{
-				MeshFilter meshFilter = renderer.GetComponent<MeshFilter>();
-				if (meshFilter == null || meshFilter.sharedMesh == null)
+				MeshRenderer sourceRenderer = sourceMesh.GetComponent<MeshRenderer>();
+
+				if (sourceMesh.sharedMesh == null || sourceRenderer == null)
 				{
-					log.Error($"Custom portal visual '{renderer.name}' has no valid mesh.");
-					UnityEngine.Object.DestroyImmediate(customVisual);
+					log.Error($"Invalid visual mesh or renderer: '{sourceMesh.name}'.");
 					return;
 				}
 
-				Material[] materials = renderer.sharedMaterials;
-				for (int i = 0; i < materials.Length; i++)
+				foreach (Material material in sourceRenderer.sharedMaterials)
 				{
-					Material sourceMaterial = materials[i];
-					if (sourceMaterial == null)
+					if (material == null)
 					{
-						log.Error($"Custom portal visual '{renderer.name}' has a missing material.");
-						UnityEngine.Object.DestroyImmediate(customVisual);
+						log.Error($"Missing material on visual mesh '{sourceMesh.name}'.");
 						return;
 					}
+				}
+			}
+
+			// Capture existing geometry before creating new visual objects.
+			MeshFilter[] originalMeshes = originalVisuals.GetComponentsInChildren<MeshFilter>(true);
+
+			GameObject visualRoot = new GameObject("PocketStonePortalVisual");
+			visualRoot.transform.SetParent(originalVisuals, false);
+
+			Dictionary<Material, Material> runtimeMaterials = new Dictionary<Material, Material>();
+
+			int added = 0;
+
+			foreach (MeshFilter sourceMesh in sourceMeshes)
+			{
+				MeshRenderer sourceRenderer = sourceMesh.GetComponent<MeshRenderer>();
+
+				GameObject part = new GameObject(sourceMesh.name);
+				part.transform.SetParent(visualRoot.transform, false);
+
+				part.transform.localPosition = sourceMesh.transform.localPosition;
+				part.transform.localRotation = sourceMesh.transform.localRotation;
+				part.transform.localScale = sourceMesh.transform.localScale;
+
+				MeshFilter meshFilter = part.AddComponent<MeshFilter>();
+				meshFilter.sharedMesh = sourceMesh.sharedMesh;
+
+				MeshRenderer renderer = part.AddComponent<MeshRenderer>();
+				Material[] sourceMaterials = sourceRenderer.sharedMaterials;
+				Material[] materials = new Material[sourceMaterials.Length];
+
+				for (int i = 0; i < sourceMaterials.Length; i++)
+				{
+					Material sourceMaterial = sourceMaterials[i];
 
 					if (!runtimeMaterials.TryGetValue(sourceMaterial, out Material runtimeMaterial))
 					{
@@ -355,13 +385,16 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				}
 
 				renderer.sharedMaterials = materials;
+
+				added++;
+				log.Info($"Added Pocket Stone Portal visual part '{part.name}'.");
 			}
 
-			// Hide only the original geometry, preserving other components.
-			foreach (MeshRenderer renderer in originalRenderers)
-				renderer.enabled = false;
+			// Clear only original visual meshes, just as Smart Dropbox does.
+			foreach (MeshFilter originalMesh in originalMeshes)
+				originalMesh.sharedMesh = null;
 
-			log.Info($"Applied Pocket Stone Portal custom model | Meshes={customRenderers.Length} | Materials={runtimeMaterials.Count}");
+			log.Info($"Applied Pocket Stone Portal custom visual | Meshes={added} | Materials={runtimeMaterials.Count}");
 		}
 
 		private static void RecolorPortalEffects(GameObject root)

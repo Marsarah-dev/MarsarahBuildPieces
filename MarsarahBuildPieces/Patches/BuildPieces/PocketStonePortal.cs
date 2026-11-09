@@ -19,6 +19,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 		private static readonly Color PortalRed = new Color(1f, 0.12f, 0.025f, 1f);
 		private static readonly Color PortalEmission = new Color(3f, 0.3f, 0.06f, 1f);
+		private static readonly Color PortalIceBlue = new Color(0.05f, 0.65f, 1f, 1f);
 		private const float PlacementHeightOffset = 0.09f;
 
 		private static bool initialized;
@@ -190,6 +191,46 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			log.Info($"Stone Portal Core recolored | Renderers={rendererCount} | Materials={runtimeMaterials.Count} | Lights={lightCount}");
 		}
 
+		private static void MixPocketStonePortalEffects(TeleportWorld teleport)
+		{
+			if (teleport == null || teleport.m_target_found == null)
+			{
+				log.Warn("Cannot mix Pocket Stone Portal effects: target-found effect missing.");
+				return;
+			}
+
+			int blueFlames = 0;
+			int blueSparks = 0;
+
+			foreach (ParticleSystem particle in teleport.m_target_found.GetComponentsInChildren<ParticleSystem>(true))
+			{
+				if (particle.name == "flames (1)")
+				{
+					var main = particle.main;
+					main.startColor = PortalIceBlue;
+
+					blueFlames++;
+					log.Info($"Pocket Stone Portal blue flame emitter configured: {particle.name}");
+				}
+				else if (particle.name == "Particle System sparcs (1)")
+				{
+					var main = particle.main;
+					main.startColor = PortalIceBlue;
+
+					blueSparks++;
+					log.Info($"Pocket Stone Portal blue spark emitter configured: {particle.name}");
+				}
+			}
+
+			if (blueFlames == 0)
+				log.Warn("Pocket Stone Portal secondary flame emitter not found.");
+
+			if (blueSparks == 0)
+				log.Warn("Pocket Stone Portal secondary spark emitter not found.");
+
+			log.Info($"Pocket Stone Portal mixed VFX configured | Blue flames={blueFlames} | Blue sparks={blueSparks}");
+		}
+
 		private static void CreateStonePortalCoreRecipe()
 		{
 			RecipeConfig recipeConfig = new RecipeConfig
@@ -293,6 +334,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			// Apply portal effects and custom model.
 			RecolorPortalEffects(PocketStonePortalPrefab);
+			MixPocketStonePortalEffects(teleport);
 			ConfigurePocketStonePortalEffects(teleport);
 			ApplyPocketStonePortalModel(PocketStonePortalPrefab);
 

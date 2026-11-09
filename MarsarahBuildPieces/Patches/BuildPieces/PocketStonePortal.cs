@@ -206,7 +206,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			// Apply portal effects and custom model.
 			RecolorPortalEffects(PocketStonePortalPrefab);
-			ApplyPocketStonePortalVisuals(teleport);
+			//ApplyPocketStonePortalVisuals(teleport);
 			ApplyPocketStonePortalModel(PocketStonePortalPrefab);
 
 			// Register prefab and build piece.
@@ -427,13 +427,37 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			// Disable original solid colliders, preserving teleport triggers.
 			int disabled = 0;
 
+			Transform oldColliderRoot = prefab.transform.Find("collider");
+			Transform oldVisualRoot = prefab.transform.Find("New");
+			Transform teleportRoot = prefab.transform.Find("TELEPORT");
+
 			foreach (Collider collider in prefab.GetComponentsInChildren<Collider>(true))
 			{
 				if (collider.isTrigger)
 					continue;
 
+				// Never disable collision components belonging to the teleport system.
+				if (teleportRoot != null && collider.transform.IsChildOf(teleportRoot))
+					continue;
+
+				if (collider.GetComponent<TeleportWorldTrigger>() != null ||
+					collider.GetComponentInParent<TeleportWorldTrigger>() != null)
+					continue;
+
+				// Only disable the old physical collision and visual geometry collision.
+				bool oldPhysicalCollider = oldColliderRoot != null &&
+					(collider.transform == oldColliderRoot || collider.transform.IsChildOf(oldColliderRoot));
+
+				bool oldVisualCollider = oldVisualRoot != null &&
+					(collider.transform == oldVisualRoot || collider.transform.IsChildOf(oldVisualRoot));
+
+				if (!oldPhysicalCollider && !oldVisualCollider)
+					continue;
+
 				collider.enabled = false;
 				disabled++;
+
+				log.Info($"Disabled original portal collider: {collider.name}");
 			}
 
 			// Create one shallow collider directly on the portal root.
@@ -444,6 +468,8 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			baseCollider.isTrigger = false;
 
 			log.Info($"Pocket Stone Portal base collider | Center={baseCollider.center} | Size={baseCollider.size} | Original disabled={disabled}");
+
+			LogPortalTriggerSetup(prefab);
 		}
 
 		private static void RecolorPortalEffects(GameObject root)
@@ -505,6 +531,25 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 				if (!__instance.PortalPrefabHash.Contains(hash))
 					__instance.PortalPrefabHash.Add(hash);
+			}
+		}
+
+		private static void LogPortalTriggerSetup(GameObject prefab)
+		{
+			TeleportWorldTrigger[] triggers = prefab.GetComponentsInChildren<TeleportWorldTrigger>(true);
+
+			log.Info($"Pocket Stone Portal teleport trigger count: {triggers.Length}");
+
+			foreach (TeleportWorldTrigger trigger in triggers)
+			{
+				Vector3 localPosition = prefab.transform.InverseTransformPoint(trigger.transform.position);
+
+				log.Info($"Teleport trigger | Object={trigger.name} | Enabled={trigger.enabled} | Active={trigger.gameObject.activeSelf} | Position={localPosition}");
+
+				foreach (Collider collider in trigger.GetComponentsInChildren<Collider>(true))
+				{
+					log.Info($"Teleport collider | Object={collider.name} | Enabled={collider.enabled} | IsTrigger={collider.isTrigger} | Bounds={collider.bounds}");
+				}
 			}
 		}
 	}

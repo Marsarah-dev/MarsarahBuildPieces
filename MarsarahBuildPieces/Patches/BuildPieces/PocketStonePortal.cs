@@ -13,10 +13,13 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 	{
 		private static readonly LogManager log = new LogManager("Pocket Stone Portal", LogManager.LogLevel.Info);
 
+		private static readonly AccessTools.FieldRef<Player, GameObject> PlacementGhostField = AccessTools.FieldRefAccess<Player, GameObject>("m_placementGhost");
+
 		public const string PortalPrefabName = "pocket_portal_stone";
 
 		private static readonly Color PortalRed = new Color(1f, 0.12f, 0.025f, 1f);
 		private static readonly Color PortalEmission = new Color(3f, 0.3f, 0.06f, 1f);
+		private const float PlacementHeightOffset = 0.09f;
 
 		private static bool initialized;
 		private static Recipe StonePortalCoreRecipe;
@@ -37,8 +40,41 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			}
 		}
 
-		// Stone Portal Core
+		[HarmonyPatch(typeof(Player), "UpdatePlacementGhost")]
+		public static class Player_UpdatePlacementGhost_HeightOffset
+		{
+			private static GameObject lastGhost;
+			private static Vector3 lastAdjustedPosition;
 
+			static void Postfix(Player __instance)
+			{
+				GameObject ghost = PlacementGhostField(__instance);
+
+				if (ghost == null || !ghost.activeSelf ||
+					(ghost.name != PortalPrefabName && ghost.name != PortalPrefabName + "(Clone)"))
+				{
+					lastGhost = null;
+					return;
+				}
+
+				Vector3 position = ghost.transform.position;
+
+				// Avoid repeatedly applying the offset if the ghost was not repositioned.
+				if (ghost == lastGhost && (position - lastAdjustedPosition).sqrMagnitude < 0.000001f)
+					return;
+
+				position.y += PlacementHeightOffset;
+				ghost.transform.position = position;
+
+				if (ghost != lastGhost)
+					log.Info($"Stone Pocket Portal placement height offset enabled | Offset={PlacementHeightOffset:F2}m");
+
+				lastGhost = ghost;
+				lastAdjustedPosition = position;
+			}
+		}
+
+		// Stone Portal Core
 		private static void CreateStonePortalCore()
 		{
 			if (MPrefabManager.GetPrefab("StonePortalCore") != null)
@@ -343,7 +379,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			GameObject visualRoot = new GameObject("PocketStonePortalVisual");
 			visualRoot.transform.SetParent(originalVisuals, false);
-			visualRoot.transform.localPosition = new Vector3(0f, 0f, 0f);
+			visualRoot.transform.localPosition = Vector3.zero;
 
 			Dictionary<Material, Material> runtimeMaterials = new Dictionary<Material, Material>();
 

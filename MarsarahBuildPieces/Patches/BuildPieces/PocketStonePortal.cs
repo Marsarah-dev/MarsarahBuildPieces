@@ -14,7 +14,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 		private static readonly LogManager log = new LogManager("Pocket Stone Portal", LogManager.LogLevel.Info);
 
 		public const string PortalPrefabName = "pocket_portal_stone";
-		private const string ConnectedEffectPrefabName = "fx_pocket_stone_portal_connected";
 
 		private static readonly Color PortalRed = new Color(1f, 0.12f, 0.025f, 1f);
 		private static readonly Color PortalEmission = new Color(3f, 0.3f, 0.06f, 1f);
@@ -206,7 +205,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			// Apply portal effects and custom model.
 			RecolorPortalEffects(PocketStonePortalPrefab);
-			//ApplyPocketStonePortalVisuals(teleport);
+			ConfigurePocketStonePortalEffects(teleport);
 			ApplyPocketStonePortalModel(PocketStonePortalPrefab);
 
 			// Register prefab and build piece.
@@ -220,49 +219,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			PocketStonePortalPrefab.SetActive(true);
 
 			log.Info($"Registered '{PortalPrefabName}' with metal transport enabled.");
-		}
-		private static void ApplyPocketStonePortalVisuals(TeleportWorld teleport)
-		{
-			GameObject vanillaWoodPortal = MPrefabManager.GetPrefab("portal_wood");
-			if (vanillaWoodPortal == null)
-			{
-				log.Error("Vanilla wooden portal prefab not found.");
-				return;
-			}
-
-			// Get the original wooden portal's target-found effect.
-			Transform sourceEffect = vanillaWoodPortal.transform.Find("_target_found_red");
-			if (sourceEffect == null)
-			{
-				log.Warn("Could not find '_target_found_red' in vanilla wooden portal.");
-				return;
-			}
-
-			// Clone the complete effect hierarchy, including its child components.
-			GameObject newEffect = UnityEngine.Object.Instantiate(sourceEffect.gameObject, PocketStonePortalPrefab.transform, false);
-			newEffect.name = "_target_found_red";
-
-			EffectFade effectFade = newEffect.GetComponent<EffectFade>();
-			if (effectFade == null)
-			{
-				log.Error("Cloned target-found effect has no EffectFade component.");
-				UnityEngine.Object.DestroyImmediate(newEffect);
-				return;
-			}
-
-			// Recolor only the cloned effect's particles and lights.
-			RecolorPortalEffects(newEffect);
-
-			// Remove the original stone portal's target-found effect.
-			Transform oldEffect = PocketStonePortalPrefab.transform.Find("_target_found");
-			if (oldEffect != null)
-				UnityEngine.Object.DestroyImmediate(oldEffect.gameObject);
-
-			// Assign the new effect to our portal.
-			teleport.m_target_found = effectFade;
-			teleport.m_colorTargetfound = PortalEmission;
-
-			log.Info("Applied wooden portal target-found effect hierarchy to Pocket Stone Portal.");
 		}
 
 		private static void ApplyPocketStonePortalModel(GameObject prefab)
@@ -486,6 +442,60 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			{
 				light.color = PortalRed;
 			}
+		}
+
+		private static void ConfigurePocketStonePortalEffects(TeleportWorld teleport)
+		{
+			const float visualScale = 0.65f;
+
+			// Shrink the original target-found effect without moving or scaling
+			// its GameObject hierarchy, which may contain functional components.
+			if (teleport.m_target_found != null)
+			{
+				int particleCount = 0;
+
+				foreach (ParticleSystem particle in teleport.m_target_found.GetComponentsInChildren<ParticleSystem>(true))
+				{
+					var main = particle.main;
+					main.startSizeMultiplier *= visualScale;
+					main.startSpeedMultiplier *= visualScale;
+
+					var shape = particle.shape;
+					if (shape.enabled)
+						shape.scale *= visualScale;
+
+					particleCount++;
+				}
+
+				foreach (Light light in teleport.m_target_found.GetComponentsInChildren<Light>(true))
+					light.range *= visualScale;
+
+				log.Info($"Pocket Stone Portal target-found VFX resized | Scale={visualScale} | Particles={particleCount}");
+			}
+			else
+			{
+				log.Warn("Pocket Stone Portal has no target-found effect to resize.");
+			}
+
+			// Restore the standard vanilla portal connection burst and sound.
+			GameObject woodPortal = MPrefabManager.GetPrefab("portal_wood");
+			TeleportWorld woodTeleport = woodPortal != null ? woodPortal.GetComponent<TeleportWorld>() : null;
+
+			if (woodTeleport == null || woodTeleport.m_connected == null ||
+				woodTeleport.m_connected.m_effectPrefabs == null ||
+				woodTeleport.m_connected.m_effectPrefabs.Length == 0)
+			{
+				log.Warn("Could not find vanilla wooden portal connection effects.");
+				return;
+			}
+
+			// Create our own effect list while reusing vanilla effect prefabs.
+			teleport.m_connected = new EffectList
+			{
+				m_effectPrefabs = (EffectData[])woodTeleport.m_connected.m_effectPrefabs.Clone()
+			};
+
+			log.Info($"Pocket Stone Portal connected VFX/SFX restored | Effects={teleport.m_connected.m_effectPrefabs.Length}");
 		}
 
 		public static bool TogglePortalVisibility()

@@ -47,10 +47,10 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				return;
 			}
 
-			GameObject corePrefab = MPrefabManager.ClonePrefab("SurtlingCore", "StonePortalCore");
+			GameObject corePrefab = MPrefabManager.ClonePrefab("MoltenCore", "StonePortalCore");
 			if (corePrefab == null)
 			{
-				log.Error("Failed to clone SurtlingCore for StonePortalCore.");
+				log.Error("Failed to clone MoltenCore for StonePortalCore.");
 				return;
 			}
 
@@ -68,6 +68,14 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			itemDrop.m_itemData.m_shared.m_maxStackSize = 1;
 			itemDrop.m_itemData.m_shared.m_weight = 10f;
 
+			Sprite icon = MAssetBundleManager.LoadEmbeddedSprite("Stone_Portal_Core.png");
+
+			if (icon != null)
+			{
+				itemDrop.m_itemData.m_shared.m_icons = new[] { icon };
+				log.Info("Stone Portal Core custom icon assigned.");
+			}
+
 			MPrefabManager.RegisterToZNetScene(corePrefab);
 			MPrefabManager.RegisterItem(corePrefab);
 
@@ -78,34 +86,72 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 		private static void ModifyStonePortalCoreColors(GameObject corePrefab)
 		{
-			Transform coreTransform = corePrefab.transform.Find("attach/core");
-			Renderer coreRenderer = coreTransform != null ? coreTransform.GetComponent<Renderer>() : null;
+			// Match the colors tested in Unity.
+			Color baseColor = new Color32(128, 0, 0, 255);    // #800000
+			Color emissionColor = new Color(1f, 0f, 0f, 1f);  // #FF0000, HDR intensity 1
+			Color lightColor = new Color(1f, 0f, 0f, 1f);
 
-			if (coreRenderer != null && coreRenderer.sharedMaterial != null)
+			Dictionary<Material, Material> runtimeMaterials = new Dictionary<Material, Material>();
+
+			int rendererCount = 0;
+			int lightCount = 0;
+
+			// Apply to both the dropped world model and the attached model.
+			foreach (Renderer renderer in corePrefab.GetComponentsInChildren<Renderer>(true))
 			{
-				Material coreMaterial = new Material(coreRenderer.sharedMaterial);
-				coreMaterial.EnableKeyword("_EMISSION");
-				coreMaterial.SetColor("_EmissionColor", new Color(3f, 0.25f, 0.05f));
-				coreRenderer.sharedMaterial = coreMaterial;
-			}
-			else
-			{
-				log.Warn("StonePortalCore: missing renderer or material at 'attach/core'.");
+				if (!(renderer is MeshRenderer) && !(renderer is SkinnedMeshRenderer))
+					continue;
+
+				Material[] materials = renderer.sharedMaterials;
+
+				for (int i = 0; i < materials.Length; i++)
+				{
+					Material originalMaterial = materials[i];
+
+					if (originalMaterial == null)
+						continue;
+
+					if (!runtimeMaterials.TryGetValue(originalMaterial, out Material material))
+					{
+						material = new Material(originalMaterial)
+						{
+							name = $"StonePortalCore_{originalMaterial.name}"
+						};
+
+						// Deep red surface.
+						if (material.HasProperty("_Color"))
+							material.SetColor("_Color", baseColor);
+
+						// Saturated red glow without excessive HDR brightness.
+						if (material.HasProperty("_EmissionColor"))
+						{
+							material.SetColor("_EmissionColor", emissionColor);
+							material.EnableKeyword("_EMISSION");
+						}
+
+						runtimeMaterials.Add(originalMaterial, material);
+
+						log.Info($"Stone Portal Core material created | Name={material.name} | Shader={material.shader.name}");
+					}
+
+					materials[i] = material;
+				}
+
+				renderer.sharedMaterials = materials;
+				rendererCount++;
 			}
 
-			Transform lightTransform = corePrefab.transform.Find("attach/Point light");
-			Light pointLight = lightTransform != null ? lightTransform.GetComponent<Light>() : null;
+			// Match any associated lighting to the new red material.
+			foreach (Light light in corePrefab.GetComponentsInChildren<Light>(true))
+			{
+				light.color = lightColor;
+				lightCount++;
+			}
 
-			if (pointLight != null)
-			{
-				pointLight.color = new Color(1f, 0.2f, 0.05f);
-				pointLight.intensity = 2.5f;
-				pointLight.range = 3f;
-			}
-			else
-			{
-				log.Warn("StonePortalCore: missing light at 'attach/Point light'.");
-			}
+			if (rendererCount == 0)
+				log.Warn("Stone Portal Core has no compatible mesh renderers.");
+
+			log.Info($"Stone Portal Core recolored | Renderers={rendererCount} | Materials={runtimeMaterials.Count} | Lights={lightCount}");
 		}
 
 		private static void CreateStonePortalCoreRecipe()
@@ -193,8 +239,8 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			}
 
 			piece.m_enabled = true;
-			piece.m_name = "Pocket Stone Portal";
-			piece.m_description = "An Ashlands-infused portable stone portal that can transport metals. Only one pocket portal of either type may be placed per player.";
+			piece.m_name = "Stone Pocket Portal";
+			piece.m_description = "An Ashlands-infused portable stone portal that can transport metals.";
 			piece.m_craftingStation = null;
 
 			Sprite icon = MAssetBundleManager.LoadEmbeddedSprite("Pocket_Stone_Portal.png");

@@ -423,6 +423,36 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			baseCollider.size = new Vector3(width, 0.10f, depth);
 			baseCollider.isTrigger = false;
 
+			// Create an interaction collider matching the actual Ashlands stone arch.
+			Transform archTransform = visualRoot.Find("AshlandsStoneArch");
+			MeshFilter archMesh = archTransform != null ? archTransform.GetComponent<MeshFilter>() : null;
+
+			if (archMesh == null || archMesh.sharedMesh == null)
+			{
+				log.Warn("Could not create Pocket Stone Portal interaction collider: AshlandsStoneArch mesh not found.");
+			}
+			else
+			{
+				int interactionLayer = LayerMask.NameToLayer("piece_nonsolid");
+
+				if (interactionLayer < 0)
+				{
+					log.Error("Could not find the piece_nonsolid layer for Pocket Stone Portal interaction.");
+					return;
+				}
+
+				GameObject interactionObject = new GameObject("PocketStonePortalInteraction");
+				interactionObject.transform.SetParent(archTransform, false);
+				interactionObject.layer = interactionLayer;
+
+				MeshCollider interactionCollider = interactionObject.AddComponent<MeshCollider>();
+				interactionCollider.sharedMesh = archMesh.sharedMesh;
+				interactionCollider.convex = false;
+				interactionCollider.isTrigger = false;
+
+				log.Info($"Pocket Stone Portal mesh interaction collider created | Mesh={archMesh.sharedMesh.name} | Layer={LayerMask.LayerToName(interactionLayer)}");
+			}
+
 			log.Info($"Pocket Stone Portal base collider | Center={baseCollider.center} | Size={baseCollider.size} | Original disabled={disabled}");
 
 			LogPortalTriggerSetup(prefab);
@@ -446,37 +476,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 		private static void ConfigurePocketStonePortalEffects(TeleportWorld teleport)
 		{
-			const float visualScale = 0.65f;
-
-			// Shrink the original target-found effect without moving or scaling
-			// its GameObject hierarchy, which may contain functional components.
-			if (teleport.m_target_found != null)
-			{
-				int particleCount = 0;
-
-				foreach (ParticleSystem particle in teleport.m_target_found.GetComponentsInChildren<ParticleSystem>(true))
-				{
-					var main = particle.main;
-					main.startSizeMultiplier *= visualScale;
-					main.startSpeedMultiplier *= visualScale;
-
-					var shape = particle.shape;
-					if (shape.enabled)
-						shape.scale *= visualScale;
-
-					particleCount++;
-				}
-
-				foreach (Light light in teleport.m_target_found.GetComponentsInChildren<Light>(true))
-					light.range *= visualScale;
-
-				log.Info($"Pocket Stone Portal target-found VFX resized | Scale={visualScale} | Particles={particleCount}");
-			}
-			else
-			{
-				log.Warn("Pocket Stone Portal has no target-found effect to resize.");
-			}
-
 			// Restore the standard vanilla portal connection burst and sound.
 			GameObject woodPortal = MPrefabManager.GetPrefab("portal_wood");
 			TeleportWorld woodTeleport = woodPortal != null ? woodPortal.GetComponent<TeleportWorld>() : null;

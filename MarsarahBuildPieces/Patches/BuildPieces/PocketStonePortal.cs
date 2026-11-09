@@ -476,11 +476,24 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 		private static void ConfigurePocketStonePortalEffects(TeleportWorld teleport)
 		{
-			// Restore the standard vanilla portal connection burst and sound.
+			// Get the standard vanilla wooden portal.
 			GameObject woodPortal = MPrefabManager.GetPrefab("portal_wood");
 			TeleportWorld woodTeleport = woodPortal != null ? woodPortal.GetComponent<TeleportWorld>() : null;
 
-			if (woodTeleport == null || woodTeleport.m_connected == null ||
+			if (woodTeleport == null)
+			{
+				log.Warn("Could not find vanilla wooden portal TeleportWorld.");
+				return;
+			}
+
+			// Match the normal portal's activation distance.
+			float originalRange = teleport.m_activationRange;
+			teleport.m_activationRange = woodTeleport.m_activationRange;
+
+			log.Info($"Pocket Stone Portal activation range | Original={originalRange:F2}m | New={teleport.m_activationRange:F2}m");
+
+			// Restore the standard vanilla portal connection burst and sound.
+			if (woodTeleport.m_connected == null ||
 				woodTeleport.m_connected.m_effectPrefabs == null ||
 				woodTeleport.m_connected.m_effectPrefabs.Length == 0)
 			{

@@ -85,7 +85,7 @@ namespace MarsarahBuildPieces.Managers
 				60);
 
 			public static readonly ConfigMetadata PocketStonePortal = new ConfigMetadata(
-				"Pocket Stone Portal",
+				"Stone Pocket Portal",
 				"Adds an Ashlands-tier portable stone portal that allows metal transport. Requires a craftable Stone Portal Core, made from a Portal Core and Ashlands resources. Players can only have one portable portal placed at a time, whether it is a Pocket Portal or Pocket Stone Portal. (Toggling mid-game requires reloading the build/crafting menu)",
 				ConfigSections.BuildPieces,
 				55);

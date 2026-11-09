@@ -19,7 +19,7 @@ namespace MarsarahBuildPieces
 
 		private void Awake()
 		{
-			LogManager.SetGlobalLogLevel(LogManager.LogLevel.Info);
+			LogManager.SetGlobalLogLevel(LogManager.LogLevel.Warning);
 
 			ConfigManager.Init(Config);
 

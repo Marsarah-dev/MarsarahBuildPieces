@@ -13,7 +13,10 @@ B. Updates
 
 C. New additions
 -----------------------
-* Convert my Glacial Stone Portal into a Glacial Pocket Portal. Works like the Pocket Portal, but can transport metal. Unlocked at Ashlands. Need to figure out the costs. Or maybe I add a reddish version of this and keep the Glacial Stone Portal as is. 
+* Added Stone Pocket Portal
+  - Added an Ashlands-inspired portable portal that transports metals. It functions like the Pocket portal requiring no workstation to build.
+  - Added Stone Portal Core, crafted at the Black Forge using Ashlands materials and the Portal Core.
+  - Only one Pocket Portal or Stone Pocket Portal can be placed per player per world. The limit is shared, not per portal. 
 
 
 ============================================================

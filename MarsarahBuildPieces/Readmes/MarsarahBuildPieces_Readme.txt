@@ -1,13 +1,14 @@
-Marsarah Build Pieces v1.1.2
+Marsarah Build Pieces v1.2.0
 ================================================================
 Marsarah Build Pieces is a standalone collection of custom buildable pieces for Valheim, focused mainly on functional pieces, portals and light sources rather than large sets of architectural walls and floors.
 
 The mod began as the custom build-piece section of Marsarah Tweaks and has now been separated into its own mod.
 
 CURRENT CONTENT:
-- 16 custom buildable pieces
-- 1 custom craftable item (Portal Core)
+- 17 custom buildable pieces
+- 2 custom craftable items (Portal Core and Stone Portal Core)
 - Pocket Portal
+- Stone Pocket Portal
 - Glacial Stone Portal
 - Mystical Light Ward
 - Smart Dropbox
@@ -168,9 +169,60 @@ Smart Dropbox is automatically disabled when MultiUserChest is detected. The two
   The Portal Core is recoverable when the Pocket Portal is destroyed, allowing the portal to be moved elsewhere.
 
 ► Placement Limit:
-  Each player can have only ONE Pocket Portal placed at a time.
+  Each player can have only ONE portable portal placed at a time.
+  This limit is shared between Pocket Portal and Stone Pocket Portal.
   The limit is tracked by the creator of the placed portal.
-  Destroying the player's existing Pocket Portal allows another to be placed.
+  Destroying the existing portable portal allows either type to be placed again.
+
+
+==================== [STONE POCKET PORTAL] =====================
+
+---------------------- [Stone Portal Core] ---------------------
+► Description:
+  An Ashlands-infused upgrade to the Portal Core used to build the Stone Pocket Portal.
+  Features a round core with a dark shell, red glow and custom icon.
+
+► Crafting Station:
+  Black Forge level 1
+
+► Recipe:
+  Portal Core:  1
+  Molten Core:  2
+  Flametal:     2
+  Grausten:    10
+
+► Item Properties:
+  Stack size: 1
+  Weight:     10
+
+
+--------------------- [Stone Pocket Portal] --------------------
+► Description:
+  An Ashlands-tier portable stone portal that allows metals and other normally restricted items to be transported.
+  Features custom stone visuals, glowing red runes, fiery portal effects and a custom icon.
+
+► Build Category:
+  Misc
+
+► Required Station:
+  None
+
+► Build Cost:
+  Stone Portal Core: 1
+
+► Resource Recovery:
+  The Stone Portal Core is recoverable when the Stone Pocket Portal is destroyed, allowing it to be moved elsewhere.
+
+► Placement Limit:
+  Each player can have only ONE portable portal placed at a time.
+  This limit is shared between Pocket Portal and Stone Pocket Portal.
+  Players cannot place one of each simultaneously.
+  Destroying the existing portable portal allows either type to be placed again.
+
+► Configuration:
+  Stone Pocket Portal can be enabled or disabled independently from the original Pocket Portal.
+  The setting also controls availability of its Stone Portal Core crafting recipe.
+  Enabled by default.
 
 
 ==================== [GLACIAL STONE PORTAL] ====================
@@ -486,6 +538,18 @@ Blaxxun-bloop - ServerSync
 
 VERSION HISTORY
 ================================================================
+
+v1.2.0
+- Stone Pocket Portal:
+  - Added an Ashlands-tier portable stone portal that allows metal transport.
+  - Added the Stone Portal Core, crafted at a level 1 Black Forge using 1 Portal Core, 2 Molten Cores, 2 Flametal and 10 Grausten.
+  - Stone Pocket Portal costs 1 Stone Portal Core and requires no workstation to place.
+  - Added custom portal visuals, glowing red runes, fiery effects and unique icons.
+  - Added an independent configuration toggle.
+  - Shares a one-per-player placement limit with the original Pocket Portal.
+
+- Pocket Portal:
+  - Added a custom blue Pocket Portal build-menu icon.
 
 v1.1.2
 - Mystical Light Ward:

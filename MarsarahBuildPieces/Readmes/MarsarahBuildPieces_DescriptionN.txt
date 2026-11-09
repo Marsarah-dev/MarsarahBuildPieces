@@ -1,6 +1,6 @@
 [size=5][b]Marsarah Build Pieces[/b][/size]
 
-[b]Version:[/b] 1.1.2
+[b]Version:[/b] 1.2.0
 [b]Author:[/b] Marsarah
 
 [line]
@@ -9,7 +9,7 @@
 
 Marsarah Build Pieces is a standalone collection of custom buildable pieces for Valheim, focused mainly on [b]functional pieces, portals and new light sources[/b] rather than large sets of architectural walls and floors.
 
-The mod began as the custom build-piece section of [b]Marsarah Tweaks[/b] and has now been separated into its own mod. It currently adds [b]16 buildable pieces[/b] plus the craftable [b]Portal Core[/b] item, including the Pocket Portal, Glacial Stone Portal, Mystical Light Ward, Smart Dropbox, Small Sign, Silver light sources, a Green Standing Brazier and colored Dvergr Lanterns.
+The mod began as the custom build-piece section of [b]Marsarah Tweaks[/b] and has now been separated into its own mod. It currently adds [b]17 buildable pieces[/b] and [b]2 craftable items[/b], including the Pocket Portal, Stone Pocket Portal, Glacial Stone Portal, Mystical Light Ward, Smart Dropbox, Small Sign, Silver light sources, a Green Standing Brazier and colored Dvergr Lanterns.
 
 All feature configs are synchronized using [b]ServerSync[/b], and the mod includes optional compatibility with MarsarahTweaks when both are installed.
 
@@ -104,9 +104,28 @@ A portable portal designed to make exploration more convenient.
 - Crafted at a [b]level 4 Workbench[/b]: 5 Surtling Cores, 20 Fine Wood, 5 Freeze Glands, 20 Obsidian.
 - Portal Core maximum stack size: [b]1[/b]. Weight: [b]10[/b].
 - Pocket Portal build cost: [b]1 Portal Core[/b].
-- Each player can only have [b]one Pocket Portal[/b] placed at a time.
-- Destroying it allows that player to place it somewhere else.
+- No workstation required to place the portal.
+- Features cyan-blue portal effects and a custom build-menu icon.
+- Shares a limit of [b]one placed portable portal per player[/b] with the Stone Pocket Portal.
+- Destroying the existing portable portal allows that player to place either type again.
 - Crafting the Portal Core introduces the feature through a custom Raven tutorial.
+
+[size=4][b]🔧 Stone Pocket Portal[/b][/size]
+An Ashlands-tier upgrade to the Pocket Portal that allows transporting metals and other normally restricted items.
+
+- Adds a craftable [b]Stone Portal Core[/b].
+- Crafted at a [b]level 1 Black Forge[/b]:
+&nbsp;&nbsp;&nbsp;- 1 Portal Core
+&nbsp;&nbsp;&nbsp;- 2 Molten Cores
+&nbsp;&nbsp;&nbsp;- 2 Flametal
+&nbsp;&nbsp;&nbsp;- 10 Grausten
+- Stone Portal Core maximum stack size: [b]1[/b]. Weight: [b]10[/b].
+- Stone Pocket Portal build cost: [b]1 Stone Portal Core[/b].
+- No workstation required to place the portal.
+- Features a custom Ashlands-inspired stone model, glowing red runes, fiery effects and unique icons.
+- Shares a limit of [b]one placed portable portal per player[/b] with the original Pocket Portal.
+- Only one of either type may be placed at a time. Destroying the existing portal allows either type to be placed again.
+- Can be enabled or disabled independently through the configuration.
 
 [size=4][b]🔧 Glacial Stone Portal[/b][/size]
 - Enables an unused vanilla stone portal as a buildable Mountain-tier portal.
@@ -213,6 +232,15 @@ Thanks for checking out Marsarah Build Pieces!
 - Blaxxun-bloop - for ServerSync
 
 [size=5][b]📜 Version History[/b][/size]
+
+[size=4][b]v1.2.0[/b][/size]
+- Added the Stone Pocket Portal, an Ashlands-tier portable portal that transports metals.
+- Added the Stone Portal Core, crafted at a level 1 Black Forge using 1 Portal Core, 2 Molten Cores, 2 Flametal and 10 Grausten.
+- Stone Pocket Portal costs 1 Stone Portal Core to build and requires no nearby workstations.
+- Pocket Portal and Stone Pocket Portal now share a limit of one placed portable portal per player.
+- Added custom visuals, glowing red runes, fiery effects and unique icons.
+- Added an independent Stone Pocket Portal configuration toggle.
+- Added a custom blue icon for the original Pocket Portal.
 
 [size=4][b]v1.1.2[/b][/size]
 - Reworked Mystical Light Ward into four configurable modes: Off, Lights Only, Lights & Fires, and Lights, Fires, Stoves & Hot Tubs.

@@ -1,6 +1,6 @@
 # <strong> Marsarah Build Pieces </strong>
 
-**Version:** 1.1.2  
+**Version:** 1.2.0  
 **Author:** Marsarah
 
 ---
@@ -9,7 +9,7 @@
 
 Marsarah Build Pieces is a standalone collection of custom buildable pieces for Valheim, focused mainly on **functional pieces, portals and new light sources** rather than large sets of architectural walls and floors.
 
-The mod began as the custom build-piece section of Marsarah Tweaks and has now been separated into its own mod. It currently adds 16 buildable pieces plus the craftable Portal Core item, including the Pocket Portal, Glacial Stone Portal, Mystical Light Ward, Smart Dropbox, Small Sign, Silver light sources, a Green Standing Brazier and colored Dvergr Lanterns.
+The mod began as the custom build-piece section of Marsarah Tweaks and has now been separated into its own mod. It currently adds **17 buildable pieces** and **2 craftable items**, including the Pocket Portal, Stone Pocket Portal, Glacial Stone Portal, Mystical Light Ward, Smart Dropbox, Small Sign, Silver light sources, a Green Standing Brazier and colored Dvergr Lanterns.
 
 All feature configs are synchronized using **ServerSync**, and the mod includes optional compatibility with MarsarahTweaks when both are installed.
 
@@ -98,6 +98,8 @@ A functional storage piece designed to make putting away gathered materials fast
 
 - **Conflicts:** Smart Dropbox is automatically disabled if MultiUserChest is detected. The two features are incompatible and using them together can cause inventory desynchronization or item loss.
 
+---
+ 
 ### <strong>🔧 Pocket Portal</strong>
 
 A portable portal designed to make exploration more convenient.
@@ -110,9 +112,31 @@ A portable portal designed to make exploration more convenient.
   - 20 Obsidian
 - Portal Core has a maximum stack size of **1** and weighs **10**.
 - Building a Pocket Portal consumes **1 Portal Core**.
-- Each player can only have **one Pocket Portal** placed at a time.
-- Destroying the existing portal allows that player to place it somewhere else.
+- No workstation is required to place it.
+- Features cyan-blue effects and a custom build-menu icon.
+- Shares a limit of **one placed portable portal per player** with the Stone Pocket Portal.
+- Destroying the existing portable portal allows either type to be placed again.
 - Crafting the Portal Core introduces the Pocket Portal through a custom Raven tutorial.
+
+---
+
+### <strong>🔧 Stone Pocket Portal</strong>
+
+An Ashlands-tier portable stone portal that allows transporting metals and other normally restricted items.
+
+- Adds a craftable **Stone Portal Core** item.
+- Stone Portal Core is crafted at a **level 1 Black Forge** using:
+  - 1 Portal Core
+  - 2 Molten Cores
+  - 2 Flametal
+  - 10 Grausten
+- Stone Portal Core has a maximum stack size of **1** and weighs **10**.
+- Building a Stone Pocket Portal consumes **1 Stone Portal Core**.
+- No workstation is required to place it.
+- Features a custom Ashlands-inspired model, glowing red runes, fiery effects and unique icons.
+- Shares a limit of **one placed portable portal per player** with the original Pocket Portal.
+- Only one of either type may be placed at a time. Destroying the existing portal allows either type to be placed again.
+- Can be enabled or disabled independently through the configuration.
 
 ---
 

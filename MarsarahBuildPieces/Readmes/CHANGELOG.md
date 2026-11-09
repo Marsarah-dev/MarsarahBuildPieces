@@ -1,5 +1,16 @@
 ## <strong> 📜 Version History </strong>
 
+v1.2.0
+- **Stone Pocket Portal:**
+  - Added an Ashlands-tier portable stone portal that can transport metals and other normally restricted items.
+  - Added the craftable Stone Portal Core, made at a level 1 Black Forge using 1 Portal Core, 2 Molten Cores, 2 Flametal and 10 Grausten.
+  - The Stone Pocket Portal costs 1 Stone Portal Core to build and requires no nearby workstations.
+  - Pocket Portal and Stone Pocket Portal share a limit of one placed portable portal per player per world.
+  - Added custom visuals, glowing red runes, fiery portal effects and unique icons.
+  - Added an independent configuration toggle for the Stone Pocket Portal.
+- **Pocket Portal:**
+  - Added a custom blue Pocket Portal build-menu icon.
+
 v1.1.2
 - **Mystical Light Ward:**
   - Reworked into four configurable modes: Off, Lights Only, Lights & Fires, and Lights, Fires, Stoves & Hot Tubs.

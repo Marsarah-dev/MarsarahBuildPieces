@@ -17,9 +17,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 		public const string PortalPrefabName = "pocket_portal_stone";
 
-		private static readonly Color PortalRed = new Color(1f, 0.12f, 0.025f, 1f);
 		private static readonly Color PortalEmission = new Color(3f, 0.3f, 0.06f, 1f);
-		private static readonly Color PortalIceBlue = new Color(0.05f, 0.65f, 1f, 1f);
 		private const float PlacementHeightOffset = 0.09f;
 
 		private static bool initialized;
@@ -191,46 +189,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			log.Info($"Stone Portal Core recolored | Renderers={rendererCount} | Materials={runtimeMaterials.Count} | Lights={lightCount}");
 		}
 
-		private static void MixPocketStonePortalEffects(TeleportWorld teleport)
-		{
-			if (teleport == null || teleport.m_target_found == null)
-			{
-				log.Warn("Cannot mix Pocket Stone Portal effects: target-found effect missing.");
-				return;
-			}
-
-			int blueFlames = 0;
-			int blueSparks = 0;
-
-			foreach (ParticleSystem particle in teleport.m_target_found.GetComponentsInChildren<ParticleSystem>(true))
-			{
-				if (particle.name == "flames (1)")
-				{
-					var main = particle.main;
-					main.startColor = PortalIceBlue;
-
-					blueFlames++;
-					log.Info($"Pocket Stone Portal blue flame emitter configured: {particle.name}");
-				}
-				else if (particle.name == "Particle System sparcs (1)")
-				{
-					var main = particle.main;
-					main.startColor = PortalIceBlue;
-
-					blueSparks++;
-					log.Info($"Pocket Stone Portal blue spark emitter configured: {particle.name}");
-				}
-			}
-
-			if (blueFlames == 0)
-				log.Warn("Pocket Stone Portal secondary flame emitter not found.");
-
-			if (blueSparks == 0)
-				log.Warn("Pocket Stone Portal secondary spark emitter not found.");
-
-			log.Info($"Pocket Stone Portal mixed VFX configured | Blue flames={blueFlames} | Blue sparks={blueSparks}");
-		}
-
 		private static void CreateStonePortalCoreRecipe()
 		{
 			RecipeConfig recipeConfig = new RecipeConfig
@@ -287,10 +245,10 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				return;
 			}
 
-			PocketStonePortalPrefab = MPrefabManager.ClonePrefab("portal", PortalPrefabName);
+			PocketStonePortalPrefab = MPrefabManager.ClonePrefab("portal_wood", PortalPrefabName);
 			if (PocketStonePortalPrefab == null)
 			{
-				log.Error("Failed to clone the unused 'portal' prefab.");
+				log.Error("Failed to clone portal_wood for Stone Pocket Portal.");
 				return;
 			}
 
@@ -329,14 +287,15 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			// Allow transporting metals and other normally restricted items.
 			teleport.m_allowAllItems = true;
 
-			// Apply red target-found color.
+			// Preserve the Ashlands-red portal emission.
 			teleport.m_colorTargetfound = PortalEmission;
 
-			// Apply portal effects and custom model.
-			RecolorPortalEffects(PocketStonePortalPrefab);
-			MixPocketStonePortalEffects(teleport);
-			ConfigurePocketStonePortalEffects(teleport);
+			// The wooden portal already provides proximity VFX/SFX,
+			// connection effects, and the correct activation range.
+			// Replace only its original wooden model.
 			ApplyPocketStonePortalModel(PocketStonePortalPrefab);
+
+			log.Info($"Stone Pocket Portal using wooden portal effects | Activation range={teleport.m_activationRange:F2}m | Proximity effect={teleport.m_target_found != null}");
 
 			// Register prefab and build piece.
 			MPrefabManager.RegisterToZNetScene(PocketStonePortalPrefab);
@@ -602,58 +561,6 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			log.Info($"Pocket Stone Portal base collider | Center={baseCollider.center} | Size={baseCollider.size} | Original disabled={disabled}");
 
 			LogPortalTriggerSetup(prefab);
-		}
-
-		private static void RecolorPortalEffects(GameObject root)
-		{
-			// Recolor particle effects only.
-			foreach (ParticleSystem particle in root.GetComponentsInChildren<ParticleSystem>(true))
-			{
-				var main = particle.main;
-				main.startColor = PortalRed;
-			}
-
-			// Recolor effect lighting.
-			foreach (Light light in root.GetComponentsInChildren<Light>(true))
-			{
-				light.color = PortalRed;
-			}
-		}
-
-		private static void ConfigurePocketStonePortalEffects(TeleportWorld teleport)
-		{
-			// Get the standard vanilla wooden portal.
-			GameObject woodPortal = MPrefabManager.GetPrefab("portal_wood");
-			TeleportWorld woodTeleport = woodPortal != null ? woodPortal.GetComponent<TeleportWorld>() : null;
-
-			if (woodTeleport == null)
-			{
-				log.Warn("Could not find vanilla wooden portal TeleportWorld.");
-				return;
-			}
-
-			// Match the normal portal's activation distance.
-			float originalRange = teleport.m_activationRange;
-			teleport.m_activationRange = woodTeleport.m_activationRange;
-
-			log.Info($"Pocket Stone Portal activation range | Original={originalRange:F2}m | New={teleport.m_activationRange:F2}m");
-
-			// Restore the standard vanilla portal connection burst and sound.
-			if (woodTeleport.m_connected == null ||
-				woodTeleport.m_connected.m_effectPrefabs == null ||
-				woodTeleport.m_connected.m_effectPrefabs.Length == 0)
-			{
-				log.Warn("Could not find vanilla wooden portal connection effects.");
-				return;
-			}
-
-			// Create our own effect list while reusing vanilla effect prefabs.
-			teleport.m_connected = new EffectList
-			{
-				m_effectPrefabs = (EffectData[])woodTeleport.m_connected.m_effectPrefabs.Clone()
-			};
-
-			log.Info($"Pocket Stone Portal connected VFX/SFX restored | Effects={teleport.m_connected.m_effectPrefabs.Length}");
 		}
 
 		public static bool TogglePortalVisibility()

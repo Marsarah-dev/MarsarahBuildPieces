@@ -347,6 +347,22 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				log.Info($"Added Pocket Stone Portal visual part '{part.name}'.");
 			}
 
+			// Bind the custom Ashlands arch to Valheim's built-in portal emission system.
+			TeleportWorld teleport = prefab.GetComponent<TeleportWorld>();
+			MeshRenderer archRenderer = visualRoot.transform.Find("AshlandsStoneArch")?.GetComponent<MeshRenderer>();
+
+			if (teleport != null && archRenderer != null)
+			{
+				teleport.m_model = archRenderer;
+				archRenderer.material.EnableKeyword("_EMISSION");
+
+				log.Info($"Pocket Stone Portal emission renderer assigned | Model={archRenderer.name} | Shader={archRenderer.material.shader.name}");
+			}
+			else
+			{
+				log.Warn("Could not assign Pocket Stone Portal emission renderer.");
+			}
+
 			// Clear only original visual meshes, just as Smart Dropbox does.
 			foreach (MeshFilter originalMesh in originalMeshes)
 				originalMesh.sharedMesh = null;

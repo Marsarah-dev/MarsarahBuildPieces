@@ -166,7 +166,8 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				{
 					new RequirementConfig("PortalCore", 1),
 					new RequirementConfig("MoltenCore", 2),
-					new RequirementConfig("FlametalNew", 5)
+					new RequirementConfig("FlametalNew", 2),
+					new RequirementConfig("Grausten", 10)
 				}
 			};
 

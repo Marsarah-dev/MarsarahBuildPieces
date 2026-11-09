@@ -335,6 +335,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			GameObject visualRoot = new GameObject("PocketStonePortalVisual");
 			visualRoot.transform.SetParent(originalVisuals, false);
+			visualRoot.transform.localPosition = new Vector3(0f, -0.07f, 0f);
 
 			Dictionary<Material, Material> runtimeMaterials = new Dictionary<Material, Material>();
 
@@ -394,7 +395,115 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			foreach (MeshFilter originalMesh in originalMeshes)
 				originalMesh.sharedMesh = null;
 
+			// Align the model with the portal's placement origin.
+			//CenterPocketStonePortalVisual(prefab, visualRoot.transform);
+
+			// Match collision to the centered model.
+			//FitPocketStonePortalCollider(prefab, visualRoot.transform);
+
 			log.Info($"Applied Pocket Stone Portal custom visual | Meshes={added} | Materials={runtimeMaterials.Count}");
+		}
+
+		private static void FitPocketStonePortalCollider(GameObject prefab, Transform visualRoot)
+		{
+			Transform baseTransform = visualRoot.Find("OriginalAshlandsBase");
+			MeshFilter baseMesh = baseTransform != null ? baseTransform.GetComponent<MeshFilter>() : null;
+
+			if (baseMesh == null || baseMesh.sharedMesh == null)
+			{
+				log.Error("Cannot fit Pocket Stone Portal colliders: base mesh not found.");
+				return;
+			}
+
+			Bounds baseBounds = baseMesh.sharedMesh.bounds;
+
+			int disabled = 0;
+
+			// Disable original solid colliders, but preserve all triggers.
+			foreach (Collider collider in prefab.GetComponentsInChildren<Collider>(true))
+			{
+				if (collider.isTrigger)
+					continue;
+
+				collider.enabled = false;
+				disabled++;
+			}
+
+			GameObject colliderRoot = new GameObject("PocketStonePortalColliders");
+			colliderRoot.transform.SetParent(visualRoot, false);
+
+			int layer = prefab.layer;
+
+			// Match the original Ashlands base footprint with a shallow step.
+			AddPocketStonePortalCollider(
+				colliderRoot.transform,
+				"BaseCollider",
+				new Vector3(baseBounds.center.x, baseBounds.max.y - 0.06f, baseBounds.center.z),
+				new Vector3(baseBounds.size.x, 0.12f, baseBounds.size.z),
+				layer
+			);
+
+			// Two separate supports keep the center of the portal open.
+			float supportOffset = baseBounds.extents.x * 0.75f;
+
+			AddPocketStonePortalCollider(
+				colliderRoot.transform,
+				"LeftSupportCollider",
+				new Vector3(-supportOffset, 0.60f, 0f),
+				new Vector3(0.42f, 1.20f, 0.50f),
+				layer
+			);
+
+			AddPocketStonePortalCollider(
+				colliderRoot.transform,
+				"RightSupportCollider",
+				new Vector3(supportOffset, 0.60f, 0f),
+				new Vector3(0.42f, 1.20f, 0.50f),
+				layer
+			);
+
+			log.Info($"Pocket Stone Portal colliders replaced | Original disabled={disabled} | Base={baseBounds.size}");
+		}
+
+		private static void CenterPocketStonePortalVisual(GameObject prefab, Transform visualRoot)
+		{
+			Transform baseTransform = visualRoot.Find("OriginalAshlandsBase");
+			MeshFilter baseMesh = baseTransform != null ? baseTransform.GetComponent<MeshFilter>() : null;
+
+			if (baseMesh == null || baseMesh.sharedMesh == null)
+			{
+				log.Warn("Could not center Pocket Stone Portal visual: base mesh not found.");
+				return;
+			}
+
+			// Find the center of the custom base relative to the original visual parent.
+			Transform parent = visualRoot.parent;
+			Vector3 baseCenter = parent.InverseTransformPoint(baseTransform.TransformPoint(baseMesh.sharedMesh.bounds.center));
+
+			// Find where the actual portal prefab's placement origin sits.
+			Vector3 placementOrigin = parent.InverseTransformPoint(prefab.transform.position);
+
+			// Shift the visual horizontally so its center matches the placement origin.
+			Vector3 correction = placementOrigin - baseCenter;
+			correction.y = 0f;
+
+			visualRoot.localPosition += correction;
+
+			log.Info($"Centered Pocket Stone Portal visual | Correction={correction} | Local position={visualRoot.localPosition}");
+		}
+
+		private static void AddPocketStonePortalCollider(Transform parent, string name, Vector3 center, Vector3 size, int layer)
+		{
+			GameObject colliderObject = new GameObject(name);
+			colliderObject.layer = layer;
+			colliderObject.transform.SetParent(parent, false);
+
+			BoxCollider box = colliderObject.AddComponent<BoxCollider>();
+			box.center = center;
+			box.size = size;
+			box.isTrigger = false;
+
+			log.Info($"Added {name} | Center={center} | Size={size}");
 		}
 
 		private static void RecolorPortalEffects(GameObject root)

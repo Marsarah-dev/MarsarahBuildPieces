@@ -343,7 +343,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 
 			GameObject visualRoot = new GameObject("PocketStonePortalVisual");
 			visualRoot.transform.SetParent(originalVisuals, false);
-			visualRoot.transform.localPosition = new Vector3(0f, -0.07f, 0f);
+			visualRoot.transform.localPosition = new Vector3(0f, 0f, 0f);
 
 			Dictionary<Material, Material> runtimeMaterials = new Dictionary<Material, Material>();
 

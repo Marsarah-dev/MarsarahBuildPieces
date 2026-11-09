@@ -94,6 +94,14 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				piece.m_name = "Pocket Portal";
 				piece.m_description = "A portal meant to be easy to carry and make exploration more convenient";
 				piece.m_craftingStation = null;
+
+				Sprite icon = MAssetBundleManager.LoadEmbeddedSprite("Pocket_Portal.png");
+
+				if (icon != null)
+				{
+					piece.m_icon = icon;
+					log.Info("Pocket Portal custom icon assigned.");
+				}
 			}
 		}
 

@@ -197,6 +197,11 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			piece.m_description = "An Ashlands-infused portable stone portal that can transport metals. Only one pocket portal of either type may be placed per player.";
 			piece.m_craftingStation = null;
 
+			Sprite icon = MAssetBundleManager.LoadEmbeddedSprite("Pocket_Stone_Portal.png");
+
+			if (icon != null)
+				piece.m_icon = icon;
+
 			// Allow transporting metals and other normally restricted items.
 			teleport.m_allowAllItems = true;
 

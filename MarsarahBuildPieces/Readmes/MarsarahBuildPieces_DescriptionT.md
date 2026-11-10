@@ -1,6 +1,6 @@
 # <strong> Marsarah Build Pieces </strong>
 
-**Version:** 1.2.0  
+**Version:** 1.2.1  
 **Author:** Marsarah
 
 ---
@@ -134,6 +134,7 @@ An Ashlands-tier portable stone portal that allows transporting metals and other
 - Building a Stone Pocket Portal consumes **1 Stone Portal Core**.
 - No workstation is required to place it.
 - Features a custom Ashlands-inspired model, glowing red runes, fiery effects and unique icons.
+- Resistant to Ashlands cinder rain and does not catch fire.
 - Shares a limit of **one placed portable portal per player** with the original Pocket Portal.
 - Only one of either type may be placed at a time. Destroying the existing portal allows either type to be placed again.
 - Can be enabled or disabled independently through the configuration.

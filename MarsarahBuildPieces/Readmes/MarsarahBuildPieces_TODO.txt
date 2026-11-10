@@ -12,7 +12,7 @@ B. Updates
 -----------------------
 * Stone Pocket Portal
   - Updated destruction fragments to no longer use the normal wood portal.
-  - No longer takes damage from Ashlands fire.
+  - Added resistance to Ashlands cinder rain, preventing the portal from burning.
 
 C. New additions
 -----------------------

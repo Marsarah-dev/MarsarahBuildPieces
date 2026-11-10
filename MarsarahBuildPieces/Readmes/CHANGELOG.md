@@ -1,5 +1,10 @@
 ## <strong> 📜 Version History </strong>
 
+v1.2.1
+- **Stone Pocket Portal:**
+  - Updated destruction effects to use custom stone fragments instead of wooden portal fragments.
+  - Added resistance to Ashlands cinder rain, preventing the portal from catching fire.
+
 v1.2.0
 - **Stone Pocket Portal:**
   - Added an Ashlands-tier portable stone portal that can transport metals and other normally restricted items.

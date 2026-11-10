@@ -1,4 +1,4 @@
-Marsarah Build Pieces v1.2.0
+Marsarah Build Pieces v1.2.1
 ================================================================
 Marsarah Build Pieces is a standalone collection of custom buildable pieces for Valheim, focused mainly on functional pieces, portals and light sources rather than large sets of architectural walls and floors.
 
@@ -212,6 +212,10 @@ Smart Dropbox is automatically disabled when MultiUserChest is detected. The two
 
 ► Resource Recovery:
   The Stone Portal Core is recoverable when the Stone Pocket Portal is destroyed, allowing it to be moved elsewhere.
+
+► Ashlands Fire Resistance:
+  Resistant to Ashlands cinder rain.
+  Does not catch fire, but can still be damaged or dismantled normally.
 
 ► Placement Limit:
   Each player can have only ONE portable portal placed at a time.
@@ -538,6 +542,11 @@ Blaxxun-bloop - ServerSync
 
 VERSION HISTORY
 ================================================================
+
+v1.2.1
+- Stone Pocket Portal:
+  - Updated destruction to use custom stone fragments instead of wooden pieces.
+  - Added resistance to Ashlands cinder rain, preventing the portal from catching fire.
 
 v1.2.0
 - Stone Pocket Portal:

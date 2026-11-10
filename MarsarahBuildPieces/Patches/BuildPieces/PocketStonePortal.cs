@@ -290,6 +290,22 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			// Preserve the Ashlands-red portal emission.
 			teleport.m_colorTargetfound = PortalEmission;
 
+			// Protect the Stone Pocket Portal from Ashlands cinder fires.
+			WearNTear wear = PocketStonePortalPrefab.GetComponent<WearNTear>();
+
+			if (wear != null)
+			{
+				wear.m_burnable = false;
+				wear.m_ashDamageResist = true;
+				wear.m_ashDamageImmune = false;
+
+				log.Info("Stone Pocket Portal configured with Ashlands fire resistance.");
+			}
+			else
+			{
+				log.Warn("Stone Pocket Portal has no WearNTear component.");
+			}
+
 			// The wooden portal already provides proximity VFX/SFX,
 			// connection effects, and the correct activation range.
 			// Replace only its original wooden model.

@@ -11,7 +11,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 {
 	public static class PocketStonePortal
 	{
-		private static readonly LogManager log = new LogManager("Pocket Stone Portal", LogManager.LogLevel.Warning);
+		private static readonly LogManager log = new LogManager("Pocket Stone Portal", LogManager.LogLevel.Info);
 
 		private static readonly AccessTools.FieldRef<Player, GameObject> PlacementGhostField = AccessTools.FieldRefAccess<Player, GameObject>("m_placementGhost");
 

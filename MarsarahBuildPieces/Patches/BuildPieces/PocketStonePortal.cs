@@ -279,6 +279,8 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			piece.m_description = "An Ashlands-infused portable stone portal that can transport metals.";
 			piece.m_craftingStation = null;
 
+			ConfigurePocketStonePortalPlacementSound(piece);
+
 			Sprite icon = MAssetBundleManager.LoadEmbeddedSprite("Pocket_Stone_Portal.png");
 
 			if (icon != null)
@@ -324,6 +326,47 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			PocketStonePortalPrefab.SetActive(true);
 
 			log.Info($"Registered '{PortalPrefabName}' with metal transport enabled.");
+		}
+
+		private static void ConfigurePocketStonePortalPlacementSound(Piece piece)
+		{
+			GameObject stonePortal = MPrefabManager.GetPrefab("portal_stone");
+			Piece stonePiece = stonePortal != null ? stonePortal.GetComponent<Piece>() : null;
+
+			if (stonePiece?.m_placeEffect?.m_effectPrefabs == null ||
+				piece.m_placeEffect?.m_effectPrefabs == null)
+			{
+				log.Warn("Could not configure Stone Pocket Portal placement sound.");
+				return;
+			}
+
+			EffectData[] effects = (EffectData[])piece.m_placeEffect.m_effectPrefabs.Clone();
+
+			foreach (EffectData stoneEffect in stonePiece.m_placeEffect.m_effectPrefabs)
+			{
+				if (stoneEffect.m_prefab == null ||
+					!stoneEffect.m_prefab.name.StartsWith("sfx_", StringComparison.OrdinalIgnoreCase))
+					continue;
+
+				for (int i = 0; i < effects.Length; i++)
+				{
+					if (effects[i].m_prefab == null ||
+						!effects[i].m_prefab.name.StartsWith("sfx_", StringComparison.OrdinalIgnoreCase))
+						continue;
+
+					effects[i] = stoneEffect;
+
+					piece.m_placeEffect = new EffectList
+					{
+						m_effectPrefabs = effects
+					};
+
+					log.Info($"Stone Pocket Portal placement sound assigned: {stoneEffect.m_prefab.name}");
+					return;
+				}
+			}
+
+			log.Warn("Could not find matching stone and wooden portal placement sounds.");
 		}
 
 		private static void ApplyPocketStonePortalModel(GameObject prefab)

@@ -2,7 +2,7 @@
 
 v1.2.1
 - **Stone Pocket Portal:**
-  - Updated destruction effects to use custom stone fragments instead of wooden portal fragments.
+  - Updated destruction to use custom stone fragments instead of wooden portal fragments.
   - Added resistance to Ashlands cinder rain, preventing the portal from catching fire.
 
 v1.2.0

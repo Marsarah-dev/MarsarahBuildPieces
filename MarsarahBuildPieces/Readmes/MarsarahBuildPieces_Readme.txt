@@ -547,6 +547,7 @@ v1.2.1
 - Stone Pocket Portal:
   - Updated destruction to use custom stone fragments instead of wooden pieces.
   - Added resistance to Ashlands cinder rain, preventing the portal from catching fire.
+  - Changed the placement sound to match the vanilla Ashlands Stone Portal.
 
 v1.2.0
 - Stone Pocket Portal:

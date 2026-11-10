@@ -237,6 +237,7 @@ Thanks for checking out Marsarah Build Pieces!
 [size=4][b]v1.2.1[/b][/size]
 - Updated Stone Pocket Portal destruction to use custom stone fragments instead of wooden pieces.
 - Added resistance to Ashlands cinder rain, preventing the Stone Pocket Portal from catching fire.
+- Changed the Stone Pocket Portal placement sound to match the vanilla Ashlands Stone Portal.
 
 [size=4][b]v1.2.0[/b][/size]
 - Added the Stone Pocket Portal, an Ashlands-tier portable portal that transports metals.

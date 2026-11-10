@@ -10,6 +10,9 @@ A. Fixes
 
 B. Updates
 -----------------------
+* Stone Pocket Portal
+  - Updated destruction fragments to no longer use the normal wood portal.
+  - No longer takes damage from Ashlands fire.
 
 C. New additions
 -----------------------

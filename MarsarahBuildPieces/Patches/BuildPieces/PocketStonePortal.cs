@@ -347,7 +347,7 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 				return;
 			}
 
-			MeshFilter[] sourceMeshes = visualPrefab.GetComponentsInChildren<MeshFilter>(true);
+			MeshFilter[] sourceMeshes = visualPrefab.GetComponentsInChildren<MeshFilter>(false);
 			if (sourceMeshes.Length == 0)
 			{
 				log.Error("Pocket Stone Portal visual prefab contains no meshes.");
@@ -456,10 +456,102 @@ namespace MarsarahBuildPieces.Patches.BuildPieces
 			foreach (MeshFilter originalMesh in originalMeshes)
 				originalMesh.sharedMesh = null;
 
+			// Configure destruction using our custom fracture geometry.
+			ConfigurePocketStonePortalFractures(prefab, visualPrefab, visualRoot.transform, runtimeMaterials);
+
 			// Match collision to the centered model.
 			FitPocketStonePortalCollider(prefab, visualRoot.transform);
 
 			log.Info($"Applied Pocket Stone Portal custom visual | Meshes={added} | Materials={runtimeMaterials.Count}");
+		}
+
+		private static void ConfigurePocketStonePortalFractures(GameObject prefab, GameObject visualPrefab, Transform visualRoot, Dictionary<Material, Material> runtimeMaterials)
+		{
+			WearNTear wear = prefab.GetComponent<WearNTear>();
+			Transform sourceFractures = visualPrefab.transform.Find("PocketStonePortalFractures");
+
+			if (wear == null || sourceFractures == null)
+			{
+				log.Warn("Cannot configure Pocket Stone Portal fractures: WearNTear or fracture hierarchy missing.");
+				return;
+			}
+
+			if (sourceFractures.childCount == 0)
+			{
+				log.Warn("Pocket Stone Portal fracture hierarchy is empty.");
+				return;
+			}
+
+			// Clone our custom fracture geometry without changing its transforms.
+			GameObject fractureRoot = UnityEngine.Object.Instantiate(sourceFractures.gameObject, visualRoot, false);
+			fractureRoot.name = "PocketStonePortalFractures";
+			fractureRoot.SetActive(false);
+
+			int fragmentCount = 0;
+
+			// Apply the same runtime materials used by the visible portal.
+			foreach (MeshRenderer renderer in fractureRoot.GetComponentsInChildren<MeshRenderer>(true))
+			{
+				MeshFilter meshFilter = renderer.GetComponent<MeshFilter>();
+
+				if (meshFilter == null || meshFilter.sharedMesh == null)
+				{
+					log.Error($"Invalid Pocket Stone Portal fracture mesh: {renderer.name}");
+					UnityEngine.Object.DestroyImmediate(fractureRoot);
+					return;
+				}
+
+				Material[] materials = renderer.sharedMaterials;
+
+				for (int i = 0; i < materials.Length; i++)
+				{
+					if (materials[i] == null || !runtimeMaterials.TryGetValue(materials[i], out Material runtimeMaterial))
+					{
+						log.Error($"Could not resolve Pocket Stone Portal fracture material: {renderer.name}");
+						UnityEngine.Object.DestroyImmediate(fractureRoot);
+						return;
+					}
+
+					materials[i] = runtimeMaterial;
+				}
+
+				renderer.sharedMaterials = materials;
+				fragmentCount++;
+			}
+
+			if (fragmentCount == 0)
+			{
+				log.Warn("Pocket Stone Portal contains no valid fracture meshes.");
+				UnityEngine.Object.DestroyImmediate(fractureRoot);
+				return;
+			}
+
+			// Replace the inherited wooden portal fragments.
+			wear.m_fragmentRoots = new[] { fractureRoot };
+			wear.m_autoCreateFragments = true;
+
+			log.Info($"Pocket Stone Portal custom fractures configured | Fragments={fragmentCount} | Root={fractureRoot.name}");
+
+			// Restore destruction VFX/SFX from the unused vanilla portal.
+			// This does not import any vanilla fracture geometry.
+			GameObject originalPortal = MPrefabManager.GetPrefab("portal");
+			WearNTear originalWear = originalPortal != null ? originalPortal.GetComponent<WearNTear>() : null;
+
+			if (originalWear != null &&
+				originalWear.m_destroyedEffect != null &&
+				originalWear.m_destroyedEffect.m_effectPrefabs != null)
+			{
+				wear.m_destroyedEffect = new EffectList
+				{
+					m_effectPrefabs = (EffectData[])originalWear.m_destroyedEffect.m_effectPrefabs.Clone()
+				};
+
+				log.Info($"Pocket Stone Portal destruction VFX/SFX restored | Effects={wear.m_destroyedEffect.m_effectPrefabs.Length}");
+			}
+			else
+			{
+				log.Warn("Original portal destruction VFX/SFX unavailable. Keeping inherited effects.");
+			}
 		}
 
 		private static void FitPocketStonePortalCollider(GameObject prefab, Transform visualRoot)
